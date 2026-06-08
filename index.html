@@ -51,6 +51,8 @@
   .tab-nav button:hover { color: var(--text); background: var(--surface2); }
   .tab-nav button.active { color: var(--accent); background: var(--accent-glow); }
 
+  #save-btn  { display: none; padding: 7px 14px; background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: all .15s; }
+  #save-btn:hover { background: var(--accent-glow); }
   #export-btn { display: none; padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
   #export-btn:hover { opacity: .85; }
 
@@ -196,7 +198,7 @@
 
   /* ── HISTORY SECTION ── */
   .history-section-wrap { border-top: 1px solid var(--border); padding-top: 22px; margin-top: 6px; }
-  .history-cols { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+  .history-cols { display: grid; grid-template-columns: 1fr 1.4fr 1.4fr; gap: 16px; }
   .history-col-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
   .history-empty { color: var(--muted2); font-size: 12px; padding: 10px 0; }
 
@@ -207,9 +209,10 @@
   .import-row .imp-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 1px; }
 
   /* Export cards */
-  .export-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
-  .export-card:hover { border-color: var(--accent); }
-  .export-card.active-card { border-color: var(--accent); background: var(--accent-glow); }
+  .export-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; }
+  .analysis-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s, background .15s; }
+  .analysis-card:hover { border-color: var(--accent); }
+  .analysis-card.active-card { border-color: var(--accent); background: var(--accent-glow); }
   .export-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
   .export-card-name { font-size: 13px; font-weight: 500; color: var(--text); }
   .export-card-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
@@ -262,7 +265,8 @@
     </div>
   </div>
   <div class="header-right">
-    <button id="export-btn" onclick="promptExport()">↓ Export Results</button>
+    <button id="save-btn"   onclick="promptSaveAnalysis()">⊙ Save Analysis</button>
+    <button id="export-btn" onclick="promptExport()">↓ Export CSV</button>
   </div>
 </header>
 
@@ -454,6 +458,18 @@
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('export-modal')">Cancel</button>
       <button class="btn-primary" id="export-save-btn" onclick="confirmExportName()">Save &amp; Download</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="save-modal">
+  <div class="modal">
+    <h3>Save Analysis</h3>
+    <p>Name this analysis so your team can reload it later. The criteria and import data will be saved — clicking it in History will restore everything exactly.</p>
+    <input type="text" id="save-name-input" placeholder="e.g. Q2 review — conservative" maxlength="120">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('save-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmSaveAnalysis()">Save</button>
     </div>
   </div>
 </div>
@@ -666,6 +682,7 @@ function runAnalysis() {
 function renderResults() {
   const content = document.getElementById('content');
   document.getElementById('export-btn').style.display = 'inline-block';
+  document.getElementById('save-btn').style.display   = 'inline-block';
   const byTier = t => results.filter(r=>r.tier===t);
   const conflicts = results.filter(r=>r.hasConflict);
   const filtered = getFiltered();
@@ -821,6 +838,41 @@ function sortBy(col){
 }
 function sa(col){if(currentSort.col!==col)return'↕';return currentSort.dir==='asc'?'↑':'↓';}
 
+// ── SAVE ANALYSIS ─────────────────────────────────────────────────
+function promptSaveAnalysis() {
+  document.getElementById('save-name-input').value = currentImportName
+    ? `${currentImportName} — analysis`
+    : `Analysis ${new Date().toISOString().slice(0,10)}`;
+  openModal('save-modal');
+}
+
+async function confirmSaveAnalysis() {
+  const name = document.getElementById('save-name-input').value.trim() ||
+    `Analysis ${new Date().toISOString().slice(0,10)}`;
+  closeModal('save-modal');
+  const byTier = t => results.filter(r => r.tier === t);
+  const summary = {
+    total: results.length,
+    deactivate: byTier('deactivate').length,
+    review: byTier('review').length,
+    keep: byTier('keep').length,
+    conflicts: results.filter(r => r.hasConflict).length,
+  };
+  const criteria = lastCfg ? buildCriteriaForStorage(lastCfg) : {};
+  try {
+    const { error } = await sb.from('exports').insert({
+      import_id: currentImportId, import_name: currentImportName,
+      name, criteria, summary, results_csv: '', type: 'analysis',
+    });
+    if (error) throw error;
+    toast(`Analysis "${name}" saved`);
+    loadHistory();
+  } catch(e) {
+    console.error(e);
+    toast('Save failed', 'error');
+  }
+}
+
 // ── EXPORT ────────────────────────────────────────────────────────
 function promptExport() {
   document.getElementById('export-name-input').value = currentImportName
@@ -875,12 +927,8 @@ async function saveAndDownloadExport(name) {
   // Save to Supabase
   try {
     const { error } = await sb.from('exports').insert({
-      import_id: currentImportId,
-      import_name: currentImportName,
-      name,
-      criteria,
-      summary,
-      results_csv: csv,
+      import_id: currentImportId, import_name: currentImportName,
+      name, criteria, summary, results_csv: csv, type: 'export',
     });
     if (error) throw error;
     toast(`Export "${name}" saved to History`);
@@ -899,11 +947,12 @@ async function saveAndDownloadExport(name) {
 
 // ── HISTORY ───────────────────────────────────────────────────────
 async function loadHistory() {
-  const [impRes, expRes] = await Promise.all([
+  const [impRes, anaRes, expRes] = await Promise.all([
     sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(30),
-    sb.from('exports').select('id,name,created_at,import_name,summary,criteria,results_csv').order('created_at',{ascending:false}).limit(30),
+    sb.from('exports').select('id,name,created_at,import_name,summary,criteria').eq('type','analysis').order('created_at',{ascending:false}).limit(30),
+    sb.from('exports').select('id,name,created_at,import_name,summary,criteria,results_csv').eq('type','export').order('created_at',{ascending:false}).limit(30),
   ]);
-  renderHistorySection(impRes.data||[], expRes.data||[]);
+  renderHistorySection(impRes.data||[], anaRes.data||[], expRes.data||[]);
 }
 
 function criteriaOneLiner(c) {
@@ -923,9 +972,9 @@ function criteriaOneLiner(c) {
   return parts.join('<br>') + (activeLabel ? `<br><span style="color:var(--muted2)">${esc(activeLabel.slice(3))}</span>` : '');
 }
 
-function renderHistorySection(imports, exports) {
+function renderHistorySection(imports, analyses, exports) {
   const el = document.getElementById('history-section');
-  if (!imports.length && !exports.length) { el.innerHTML = ''; return; }
+  if (!imports.length && !analyses.length && !exports.length) { el.innerHTML = ''; return; }
 
   const importsHtml = imports.length
     ? imports.map(i => `
@@ -938,28 +987,49 @@ function renderHistorySection(imports, exports) {
       </div>`).join('')
     : `<div class="history-empty">No imports yet.</div>`;
 
+  function countBadges(s) {
+    return [
+      s.deactivate!=null?`<span class="exp-count deactivate">🔴 ${s.deactivate}</span>`:'',
+      s.review    !=null?`<span class="exp-count review">🟡 ${s.review}</span>`:'',
+      s.keep      !=null?`<span class="exp-count keep">🟢 ${s.keep}</span>`:'',
+    ].join('');
+  }
+
+  const analysesHtml = analyses.length
+    ? analyses.map(a => {
+        const s = a.summary||{};
+        const critLine = criteriaOneLiner(a.criteria);
+        return `
+        <div class="analysis-card" id="acard-${a.id}" onclick="reloadAnalysis('${a.id}')">
+          <div class="export-card-top">
+            <div>
+              <div class="export-card-name">📊 ${esc(a.name)}</div>
+              <div class="export-card-meta">${fmtDateShort(a.created_at)}${a.import_name?' · '+esc(a.import_name):''}</div>
+            </div>
+            <div class="export-card-counts">${countBadges(s)}</div>
+          </div>
+          ${critLine?`<div class="export-criteria-line">${critLine}</div>`:''}
+        </div>`;
+      }).join('')
+    : `<div class="history-empty">No saved analyses yet.</div>`;
+
   const exportsHtml = exports.length
     ? exports.map(e => {
         const s = e.summary||{};
-        const countBadges = [
-          s.deactivate!=null?`<span class="exp-count deactivate">🔴 ${s.deactivate}</span>`:'',
-          s.review    !=null?`<span class="exp-count review">🟡 ${s.review}</span>`:'',
-          s.keep      !=null?`<span class="exp-count keep">🟢 ${s.keep}</span>`:'',
-        ].join('');
         const critLine = criteriaOneLiner(e.criteria);
         const csvData  = JSON.stringify(e.results_csv||'');
         const nameData = JSON.stringify(e.name||'export');
         return `
-        <div class="export-card" id="ecard-${e.id}" onclick="reloadExport('${e.id}')">
+        <div class="export-card">
           <div class="export-card-top">
             <div>
               <div class="export-card-name">📤 ${esc(e.name)}</div>
-              <div class="export-card-meta">${fmtDateShort(e.created_at)}${e.import_name?' · from: '+esc(e.import_name):''}</div>
+              <div class="export-card-meta">${fmtDateShort(e.created_at)}${e.import_name?' · '+esc(e.import_name):''}</div>
             </div>
-            <div class="export-card-counts">${countBadges}</div>
+            <div class="export-card-counts">${countBadges(s)}</div>
           </div>
           ${critLine?`<div class="export-criteria-line">${critLine}</div>`:''}
-          <button class="dl-btn" onclick="event.stopPropagation();redownloadExport(${nameData},${csvData})">↓ Re-download CSV</button>
+          <button class="dl-btn" onclick="redownloadExport(${nameData},${csvData})">↓ Re-download CSV</button>
         </div>`;
       }).join('')
     : `<div class="history-empty">No exports yet.</div>`;
@@ -973,6 +1043,10 @@ function renderHistorySection(imports, exports) {
           ${importsHtml}
         </div>
         <div>
+          <div class="history-col-label">Saved Analyses</div>
+          ${analysesHtml}
+        </div>
+        <div>
           <div class="history-col-label">Exports</div>
           ${exportsHtml}
         </div>
@@ -980,25 +1054,22 @@ function renderHistorySection(imports, exports) {
     </div>`;
 }
 
-async function reloadExport(exportId) {
-  // Highlight card
-  document.querySelectorAll('.export-card').forEach(c => c.classList.remove('active-card'));
-  const card = document.getElementById('ecard-' + exportId);
+async function reloadAnalysis(id) {
+  // Swap active highlight
+  document.querySelectorAll('.analysis-card').forEach(c => c.classList.remove('active-card'));
+  const card = document.getElementById('acard-' + id);
   if (card) card.classList.add('active-card');
 
-  toast('Loading export…', 'success');
+  toast('Loading…', 'success');
 
-  // Fetch full export
-  const { data: exp, error: eErr } = await sb.from('exports').select('*').eq('id', exportId).single();
-  if (eErr || !exp) { toast('Could not load export', 'error'); return; }
+  const { data: rec, error } = await sb.from('exports').select('*').eq('id', id).single();
+  if (error || !rec) { toast('Could not load analysis', 'error'); return; }
 
-  // Restore criteria to sidebar
-  if (exp.criteria) restoreCriteria(exp.criteria);
+  if (rec.criteria) restoreCriteria(rec.criteria);
 
-  // Load the linked import's CSV data
-  if (exp.import_id) {
-    const { data: imp } = await sb.from('imports').select('id,name,csv_data,row_count').eq('id', exp.import_id).single();
-    if (imp && imp.csv_data) {
+  if (rec.import_id) {
+    const { data: imp } = await sb.from('imports').select('id,name,csv_data,row_count').eq('id', rec.import_id).single();
+    if (imp?.csv_data) {
       rawRows = imp.csv_data;
       currentImportId = imp.id;
       currentImportName = imp.name;
@@ -1008,12 +1079,11 @@ async function reloadExport(exportId) {
     }
   }
 
-  // Re-run with restored criteria
   if (rawRows.length) {
     runAnalysis();
-    toast(`Reloaded: ${exp.name}`);
+    toast(`Loaded: ${rec.name}`);
   } else {
-    toast('No import data linked — criteria restored, upload a CSV to re-run', 'error');
+    toast('No import linked — criteria restored, upload a CSV to re-run', 'error');
   }
 }
 
