@@ -302,6 +302,16 @@
   .hbtn.delete { color: var(--muted2); }
   .hbtn.delete:hover { border-color: var(--deactivate); color: var(--deactivate); background: var(--deactivate-bg); }
   .history-empty { font-size: 12px; color: var(--muted2); padding: 10px 0; }
+
+  /* Grouped import+analyses */
+  .import-group { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
+  .import-group-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; background: var(--surface); }
+  .import-group-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .import-group-icon { font-size: 20px; flex-shrink: 0; }
+  .import-group-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .linked-analyses { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+  .linked-analysis { border-radius: 6px; margin: 0; }
+  .linked-analysis .hcard-icon { font-size: 14px; }
 </style>
 </head>
 <body>
@@ -1008,10 +1018,18 @@ async function loadHistoryPage() {
   el.innerHTML = '<div style="color:var(--muted2);font-size:13px">Loading…</div>';
   const [impRes, anaRes] = await Promise.all([
     sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(50),
-    sb.from('exports').select('id,name,created_at,import_name,summary,criteria,results_csv,saved_by').eq('type','analysis').order('created_at',{ascending:false}).limit(50),
+    sb.from('exports').select('id,name,created_at,import_id,import_name,summary,criteria,results_csv,saved_by').eq('type','analysis').order('created_at',{ascending:false}).limit(50),
   ]);
   const imports  = impRes.data || [];
   const analyses = anaRes.data || [];
+
+  // Group analyses by import_id
+  const byImport = {};
+  const unlinked = [];
+  analyses.forEach(a => {
+    if (a.import_id) { (byImport[a.import_id] = byImport[a.import_id]||[]).push(a); }
+    else unlinked.push(a);
+  });
 
   function countBadges(s) {
     return [
@@ -1021,31 +1039,17 @@ async function loadHistoryPage() {
     ].join('');
   }
 
-  const importsHtml = imports.length ? imports.map(i => `
-    <div class="hcard" id="icard-${i.id}">
-      <div class="hcard-icon">📥</div>
-      <div class="hcard-body">
-        <div class="hcard-name">${esc(i.name)}</div>
-        <div class="hcard-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)}</div>
-        <div class="hcard-actions">
-          <button class="hbtn primary" onclick="redownloadImport('${i.id}','${esc(i.name)}')">↓ Download CSV</button>
-          <button class="hbtn delete" onclick="deleteImport('${i.id}')">🗑 Delete</button>
-        </div>
-      </div>
-    </div>`).join('') : `<div class="history-empty">No imports yet.</div>`;
-
-  const analysesHtml = analyses.length ? analyses.map(a => {
+  function analysisCard(a) {
     const s = a.summary||{};
     const critBlock = criteriaBlock(a.criteria);
     const hasCsv = !!(a.results_csv);
     const csvArg = JSON.stringify(a.results_csv||'');
     const nameArg = JSON.stringify(a.name||'export');
-    return `
-    <div class="hcard" id="acard-${a.id}">
-      <div class="hcard-icon">📊</div>
+    return `<div class="hcard linked-analysis" id="acard-${a.id}">
+      <div class="hcard-icon" style="font-size:14px">📊</div>
       <div class="hcard-body">
         <div class="hcard-name">${esc(a.name)}</div>
-        <div class="hcard-meta">by ${esc(a.saved_by||'Anonymous')} · ${fmtDateShort(a.created_at)}${a.import_name?' · '+esc(a.import_name):''}</div>
+        <div class="hcard-meta">by ${esc(a.saved_by||'Anonymous')} · ${fmtDateShort(a.created_at)}</div>
         ${s.deactivate!=null?`<div class="hcard-counts">${countBadges(s)}</div>`:''}
         ${critBlock?`<div class="hcard-criteria">${critBlock}</div>`:''}
         <div class="hcard-actions">
@@ -1055,17 +1059,39 @@ async function loadHistoryPage() {
         </div>
       </div>
     </div>`;
-  }).join('') : `<div class="history-empty">No saved analyses yet.</div>`;
+  }
+
+  const groupsHtml = imports.length ? imports.map(i => {
+    const linked = byImport[i.id] || [];
+    return `
+    <div class="import-group" id="icard-${i.id}">
+      <div class="import-group-header">
+        <div class="import-group-left">
+          <span class="import-group-icon">📥</span>
+          <div>
+            <div class="import-group-name">${esc(i.name)}</div>
+            <div class="hcard-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)} · ${linked.length} ${linked.length===1?'analysis':'analyses'}</div>
+          </div>
+        </div>
+        <div class="hcard-actions">
+          <button class="hbtn primary" onclick="redownloadImport('${i.id}','${esc(i.name)}')">↓ Download CSV</button>
+          <button class="hbtn delete" onclick="deleteImport('${i.id}')">🗑 Delete</button>
+        </div>
+      </div>
+      ${linked.length ? `<div class="linked-analyses">${linked.map(analysisCard).join('')}</div>` : ''}
+    </div>`;
+  }).join('') : `<div class="history-empty">No imports yet.</div>`;
+
+  const unlinkedHtml = unlinked.length ? `
+    <div style="margin-top:24px">
+      <div class="history-section-hd" style="color:var(--muted)">📊 Analyses without a linked import <span class="count-badge">${unlinked.length}</span></div>
+      ${unlinked.map(analysisCard).join('')}
+    </div>` : '';
 
   el.innerHTML = `<div class="history-page">
-    <div>
-      <div class="history-section-hd">📥 Imports <span class="count-badge">${imports.length}</span></div>
-      ${importsHtml}
-    </div>
-    <div>
-      <div class="history-section-hd">📊 Saved Analyses <span class="count-badge">${analyses.length}</span></div>
-      ${analysesHtml}
-    </div>
+    <div class="history-section-hd">📥 Imports &amp; Analyses <span class="count-badge">${imports.length}</span></div>
+    ${groupsHtml}
+    ${unlinkedHtml}
   </div>`;
 }
 
