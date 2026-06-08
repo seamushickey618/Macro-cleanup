@@ -610,21 +610,23 @@ function parseAndSaveImport(file, name) {
       document.getElementById('run-btn').disabled = false;
       document.getElementById('run-btn').textContent = `Run Analysis (${rawRows.length} rows)`;
 
-      // Save to Supabase
+      // Save to Supabase — skip csv_data if payload would exceed ~8 MB
+      const csvJson = JSON.stringify(rawRows);
+      const storeData = csvJson.length < 8_000_000;
       try {
         const { data, error } = await sb.from('imports').insert({
           name,
           row_count: rawRows.length,
-          csv_data: rawRows,
+          csv_data: storeData ? rawRows : [],
         }).select('id').single();
         if (error) throw error;
         currentImportId = data.id;
         currentImportName = name;
-        toast(`Import "${name}" saved to History`);
-        loadHistory();
+        toast(storeData ? `Import "${name}" saved` : `Import "${name}" saved (file too large to store for reload)`);
       } catch(e) {
         console.error('Import save failed:', e);
-        toast('Import saved locally (Supabase error)', 'error');
+        const msg = e?.message || e?.details || String(e);
+        toast(`Supabase error: ${msg}`, 'error');
       }
     }
   });
