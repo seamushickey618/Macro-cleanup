@@ -52,10 +52,10 @@
   .tab-nav button:hover { color: var(--text); background: var(--surface2); }
   .tab-nav button.active { color: var(--accent); background: var(--accent-glow); }
 
-  #save-btn  { display: none; padding: 7px 14px; background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: all .15s; }
-  #save-btn:hover { background: var(--accent-glow); }
-  #export-btn { display: none; padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
-  #export-btn:hover { opacity: .85; }
+  #save-btn        { padding: 7px 14px; background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: all .15s; }
+  #save-btn:hover  { background: var(--accent-glow); }
+  #save-export-btn { padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+  #save-export-btn:hover { opacity: .85; }
 
   /* ── LAYOUT ── */
   .main { display: flex; overflow: hidden; width: 100%; flex: 1; min-height: 0; }
@@ -286,6 +286,24 @@
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── HISTORY PAGE ── */
+  .history-page { display: flex; flex-direction: column; gap: 28px; max-width: 900px; }
+  .history-section-hd { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .hcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; }
+  .hcard + .hcard { margin-top: 8px; }
+  .hcard-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .hcard-body { flex: 1; min-width: 0; }
+  .hcard-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .hcard-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
+  .hcard-criteria { font-size: 11px; color: var(--muted2); font-family: 'DM Mono', monospace; line-height: 1.7; margin-bottom: 8px; }
+  .hcard-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hcard-counts { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+  .hbtn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid var(--border2); background: transparent; color: var(--muted); }
+  .hbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .hbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .hbtn.primary:hover { opacity: .85; }
+  .history-empty { font-size: 12px; color: var(--muted2); padding: 10px 0; }
 </style>
 </head>
 <body>
@@ -298,9 +316,13 @@
       <div class="logo-sub">Zendesk — Audit Tool</div>
     </div>
   </div>
+  <div class="tab-nav">
+    <button id="tab-analysis" class="active" onclick="showTab('analysis')">Analysis</button>
+    <button id="tab-history"                 onclick="showTab('history')">History</button>
+  </div>
   <div class="header-right">
-    <button id="save-btn"   onclick="promptSaveAnalysis()">⊙ Save Analysis</button>
-    <button id="export-btn" onclick="promptExport()">↓ Export CSV</button>
+    <button id="save-btn"        style="display:none" onclick="promptSave(false)">⊙ Save</button>
+    <button id="save-export-btn" style="display:none" onclick="promptSave(true)">↓ Save &amp; Export</button>
   </div>
 </header>
 
@@ -486,14 +508,16 @@
 
   </aside>
 
-  <main class="content" id="content">
+  <div id="tab-analysis-content" class="content" style="flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:22px;">
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">🔍</div>
       <div class="empty-title">No data loaded</div>
       <div class="empty-sub">Upload your Zendesk macros CSV, configure criteria in the sidebar, then run.</div>
     </div>
-    <div id="history-section"></div>
-  </main>
+  </div>
+  <div id="tab-history-content" class="content" style="display:none;flex:1;overflow-y:auto;padding:24px 28px;">
+    <div id="history-page-inner"><div style="color:var(--muted2);font-size:13px">Loading…</div></div>
+  </div>
 </div><!-- /.main -->
 </div><!-- /.page-body -->
 
@@ -505,32 +529,22 @@
     <input type="text" id="import-name-input" placeholder="e.g. June 2026 full export" maxlength="120">
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('import-modal')">Skip</button>
-      <button class="btn-primary" id="import-save-btn" onclick="confirmImportName()">Save &amp; Continue</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay hidden" id="export-modal">
-  <div class="modal">
-    <h3>Name this export</h3>
-    <p>Give this export a name. The criteria and summary will be saved alongside the CSV so your team can review the logic used.</p>
-    <input type="text" id="export-name-input" placeholder="e.g. Q2 cleanup — strict criteria" maxlength="120">
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('export-modal')">Cancel</button>
-      <button class="btn-primary" id="export-save-btn" onclick="confirmExportName()">Save &amp; Download</button>
+      <button class="btn-primary" onclick="confirmImportName()">Save &amp; Continue</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay hidden" id="save-modal">
   <div class="modal">
-    <h3>Save Analysis</h3>
-    <p>Name this analysis so your team can reload it later. The criteria and import data will be saved — anyone can click it in the sidebar to restore exactly.</p>
-    <input type="text" id="save-name-input" placeholder="e.g. Q2 review — conservative" maxlength="120" style="margin-bottom:10px">
-    <input type="text" id="save-author-input" placeholder="Your name (e.g. Sarah)" maxlength="60" style="margin-bottom:16px">
+    <h3 id="save-modal-title">Save Analysis</h3>
+    <p id="save-modal-desc">Name this analysis so your team can reload it later. Criteria and results are stored for everyone.</p>
+    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Your name</label>
+    <input type="text" id="save-author-input" placeholder="e.g. Sarah" maxlength="60" style="margin-bottom:12px" oninput="this.style.borderColor=''" required>
+    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Analysis name</label>
+    <input type="text" id="save-name-input" placeholder="e.g. Q2 review — conservative" maxlength="120" style="margin-bottom:16px">
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('save-modal')">Cancel</button>
-      <button class="btn-primary" onclick="confirmSaveAnalysis()">Save</button>
+      <button class="btn-primary" id="save-modal-confirm" onclick="confirmSave()">Save</button>
     </div>
   </div>
 </div>
@@ -558,9 +572,8 @@ let currentImportName = null;
 let pendingFile = null;
 let lastCfg = null;
 
-// load history on page ready, poll sidebar analyses every 30s
+// load on page ready, poll sidebar analyses every 30s
 window.addEventListener('DOMContentLoaded', () => {
-  loadHistory();
   loadSidebarAnalyses();
   setInterval(loadSidebarAnalyses, 30000);
 });
@@ -743,11 +756,20 @@ function runAnalysis() {
   renderResults();
 }
 
+// ── TAB ──────────────────────────────────────────────────────────
+function showTab(name) {
+  document.getElementById('tab-analysis-content').style.display = name === 'analysis' ? 'flex' : 'none';
+  document.getElementById('tab-history-content').style.display  = name === 'history'  ? 'block' : 'none';
+  document.getElementById('tab-analysis').classList.toggle('active', name === 'analysis');
+  document.getElementById('tab-history').classList.toggle('active', name === 'history');
+  if (name === 'history') loadHistoryPage();
+}
+
 // ── RENDER ────────────────────────────────────────────────────────
 function renderResults() {
-  const content = document.getElementById('content');
-  document.getElementById('export-btn').style.display = 'inline-block';
-  document.getElementById('save-btn').style.display   = 'inline-block';
+  const content = document.getElementById('tab-analysis-content');
+  document.getElementById('save-btn').style.display        = 'inline-block';
+  document.getElementById('save-export-btn').style.display = 'inline-block';
   const byTier = t => results.filter(r=>r.tier===t);
   const conflicts = results.filter(r=>r.hasConflict);
   const filtered = getFiltered();
@@ -857,7 +879,16 @@ function renderResults() {
   });
 
   html += `</tbody></table>${renderPagination(filtered.length)}</div></div>`;
-  content.innerHTML = html;
+
+  document.getElementById('empty-state').style.display = 'none';
+  let resultsDiv = document.getElementById('results-area');
+  if (!resultsDiv) {
+    resultsDiv = document.createElement('div');
+    resultsDiv.id = 'results-area';
+    resultsDiv.style.cssText = 'display:contents';
+    content.appendChild(resultsDiv);
+  }
+  resultsDiv.innerHTML = html;
 }
 
 function renderPagination(total) {
@@ -903,18 +934,31 @@ function sortBy(col){
 }
 function sa(col){if(currentSort.col!==col)return'↕';return currentSort.dir==='asc'?'↑':'↓';}
 
-// ── SAVE ANALYSIS ─────────────────────────────────────────────────
-function promptSaveAnalysis() {
-  document.getElementById('save-name-input').value = currentImportName
-    ? `${currentImportName} — analysis`
-    : `Analysis ${new Date().toISOString().slice(0,10)}`;
+// ── SAVE (+ optional export) ──────────────────────────────────────
+let _saveWithExport = false;
+
+function promptSave(withExport) {
+  _saveWithExport = withExport;
+  document.getElementById('save-modal-title').textContent = withExport ? 'Save & Export' : 'Save Analysis';
+  document.getElementById('save-modal-desc').textContent  = withExport
+    ? 'Save this analysis for your team and download a CSV of the current results.'
+    : 'Save this analysis so your team can reload it any time from the sidebar.';
+  document.getElementById('save-modal-confirm').textContent = withExport ? 'Save & Download' : 'Save';
   document.getElementById('save-author-input').value = localStorage.getItem('macro_author') || '';
+  document.getElementById('save-name-input').value   = currentImportName
+    ? `${currentImportName} — ${new Date().toISOString().slice(0,10)}`
+    : `Analysis ${new Date().toISOString().slice(0,10)}`;
   openModal('save-modal');
 }
 
-async function confirmSaveAnalysis() {
-  const name   = document.getElementById('save-name-input').value.trim()   || `Analysis ${new Date().toISOString().slice(0,10)}`;
+async function confirmSave() {
   const author = document.getElementById('save-author-input').value.trim() || 'Anonymous';
+  const name   = document.getElementById('save-name-input').value.trim()   || `Analysis ${new Date().toISOString().slice(0,10)}`;
+  if (!author || author === 'Anonymous') {
+    document.getElementById('save-author-input').focus();
+    document.getElementById('save-author-input').style.borderColor = 'var(--deactivate)';
+    return;
+  }
   localStorage.setItem('macro_author', author);
   closeModal('save-modal');
 
@@ -927,34 +971,21 @@ async function confirmSaveAnalysis() {
     conflicts: results.filter(r => r.hasConflict).length,
   };
   const criteria = lastCfg ? buildCriteriaForStorage(lastCfg) : {};
+  const csvData  = _saveWithExport ? buildResultsCsv() : '';
+
   try {
     const { error } = await sb.from('exports').insert({
       import_id: currentImportId, import_name: currentImportName,
-      name, criteria, summary, results_csv: '', type: 'analysis', saved_by: author,
+      name, criteria, summary, results_csv: csvData, type: 'analysis', saved_by: author,
     });
     if (error) throw error;
-    toast(`Analysis "${name}" saved`);
-    loadHistory();
+    toast(`"${name}" saved`);
     loadSidebarAnalyses();
+    if (_saveWithExport) triggerCsvDownload(csvData, name);
   } catch(e) {
     console.error(e);
     toast('Save failed', 'error');
   }
-}
-
-// ── EXPORT ────────────────────────────────────────────────────────
-function promptExport() {
-  document.getElementById('export-name-input').value = currentImportName
-    ? `${currentImportName} — export`
-    : `Macro audit ${new Date().toISOString().slice(0,10)}`;
-  openModal('export-modal');
-}
-
-async function confirmExportName() {
-  const name = document.getElementById('export-name-input').value.trim() ||
-    `Export ${new Date().toISOString().slice(0,10)}`;
-  closeModal('export-modal');
-  await saveAndDownloadExport(name);
 }
 
 function buildCriteriaForStorage(cfg) {
@@ -977,37 +1008,14 @@ function buildCriteriaForStorage(cfg) {
   };
 }
 
-async function saveAndDownloadExport(name) {
-  const f = getFiltered();
-  const byTier = t => results.filter(r=>r.tier===t);
-  const summary = {
-    total: results.length,
-    deactivate: byTier('deactivate').length,
-    review: byTier('review').length,
-    keep: byTier('keep').length,
-    conflicts: results.filter(r=>r.hasConflict).length,
-  };
-  const criteria = lastCfg ? buildCriteriaForStorage(lastCfg) : {};
-
+function buildResultsCsv() {
+  const f = results; // export all results, not just current filter view
   const rows = [['Tier','Base Title','Languages','Total 30d Usage','Per-Language Usage','Created At','Last Updated At','Category','Has Conflict','Deactivate? Conflict','Actioned Conflict','Macro IDs']];
   f.forEach(fam=>rows.push([fam.tier,fam.base,fam.langs.join('; '),fam.totalUsage30,fam.members.map(m=>`${m.lang}:${m.usage30}`).join('; '),fmtDate(fam.earliestCreated),fmtDate(fam.latestUpdated),fam.category,fam.hasConflict,fam.hasDeactivateConflict,fam.hasActionedConflict,fam.members.map(m=>m.id).join('; ')]));
-  const csv = rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  return rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+}
 
-  // Save to Supabase
-  try {
-    const { error } = await sb.from('exports').insert({
-      import_id: currentImportId, import_name: currentImportName,
-      name, criteria, summary, results_csv: csv, type: 'export',
-    });
-    if (error) throw error;
-    toast(`Export "${name}" saved to History`);
-    loadHistory();
-  } catch(e) {
-    console.error('Export save failed:', e);
-    toast('Download started (Supabase save failed)', 'error');
-  }
-
-  // Download
+function triggerCsvDownload(csv, name) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download = `${name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
@@ -1057,14 +1065,69 @@ async function loadSidebarAnalyses() {
   }).join('');
 }
 
-// ── HISTORY ───────────────────────────────────────────────────────
-async function loadHistory() {
-  const [impRes, anaRes, expRes] = await Promise.all([
-    sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(30),
-    sb.from('exports').select('id,name,created_at,import_name,summary,criteria').eq('type','analysis').order('created_at',{ascending:false}).limit(30),
-    sb.from('exports').select('id,name,created_at,import_name,summary,criteria,results_csv').eq('type','export').order('created_at',{ascending:false}).limit(30),
+// ── HISTORY PAGE ──────────────────────────────────────────────────
+async function loadHistoryPage() {
+  const el = document.getElementById('history-page-inner');
+  el.innerHTML = '<div style="color:var(--muted2);font-size:13px">Loading…</div>';
+  const [impRes, anaRes] = await Promise.all([
+    sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(50),
+    sb.from('exports').select('id,name,created_at,import_name,summary,criteria,results_csv,saved_by').eq('type','analysis').order('created_at',{ascending:false}).limit(50),
   ]);
-  renderHistorySection(impRes.data||[], anaRes.data||[], expRes.data||[]);
+  const imports  = impRes.data || [];
+  const analyses = anaRes.data || [];
+
+  function countBadges(s) {
+    return [
+      s.deactivate!=null?`<span class="ana-pill d">🔴 ${s.deactivate}</span>`:'',
+      s.review    !=null?`<span class="ana-pill r">🟡 ${s.review}</span>`:'',
+      s.keep      !=null?`<span class="ana-pill k">🟢 ${s.keep}</span>`:'',
+    ].join('');
+  }
+
+  const importsHtml = imports.length ? imports.map(i => `
+    <div class="hcard">
+      <div class="hcard-icon">📥</div>
+      <div class="hcard-body">
+        <div class="hcard-name">${esc(i.name)}</div>
+        <div class="hcard-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)}</div>
+        <div class="hcard-actions">
+          <button class="hbtn primary" onclick="redownloadImport('${i.id}','${esc(i.name)}')">↓ Download CSV</button>
+        </div>
+      </div>
+    </div>`).join('') : `<div class="history-empty">No imports yet.</div>`;
+
+  const analysesHtml = analyses.length ? analyses.map(a => {
+    const s = a.summary||{};
+    const critLine = criteriaOneLiner(a.criteria);
+    const hasCsv = !!(a.results_csv);
+    const csvArg = JSON.stringify(a.results_csv||'');
+    const nameArg = JSON.stringify(a.name||'export');
+    return `
+    <div class="hcard" id="acard-${a.id}">
+      <div class="hcard-icon">📊</div>
+      <div class="hcard-body">
+        <div class="hcard-name">${esc(a.name)}</div>
+        <div class="hcard-meta">by ${esc(a.saved_by||'Anonymous')} · ${fmtDateShort(a.created_at)}${a.import_name?' · '+esc(a.import_name):''}</div>
+        ${s.deactivate!=null?`<div class="hcard-counts">${countBadges(s)}</div>`:''}
+        ${critLine?`<div class="hcard-criteria">${critLine}</div>`:''}
+        <div class="hcard-actions">
+          <button class="hbtn primary" onclick="reloadAnalysis('${a.id}');showTab('analysis')">⟳ Reload</button>
+          ${hasCsv?`<button class="hbtn" onclick="triggerCsvDownload(${csvArg},${nameArg})">↓ Export CSV</button>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="history-empty">No saved analyses yet.</div>`;
+
+  el.innerHTML = `<div class="history-page">
+    <div>
+      <div class="history-section-hd">📥 Imports <span class="count-badge">${imports.length}</span></div>
+      ${importsHtml}
+    </div>
+    <div>
+      <div class="history-section-hd">📊 Saved Analyses <span class="count-badge">${analyses.length}</span></div>
+      ${analysesHtml}
+    </div>
+  </div>`;
 }
 
 function criteriaOneLiner(c) {
@@ -1072,7 +1135,6 @@ function criteriaOneLiner(c) {
   const d = c.deactivate||{}, r = c.review||{};
   const fmt = crit => crit ? `${crit.op==='lte'?'≤':'<'} ${crit.value}` : null;
   const join = (parts, conn) => parts.filter(Boolean).join(` ${(conn||'AND').toUpperCase()} `);
-
   const dParts = [d.usage?`usage ${fmt(d.usage)}`:null, d.created?`created ${fmt(d.created)}`:null, d.updated?`updated ${fmt(d.updated)}`:null];
   const rParts = [r.usage?`usage ${fmt(r.usage)}`:null, r.created?`created ${fmt(r.created)}`:null, r.updated?`updated ${fmt(r.updated)}`:null];
   const dStr = join(dParts, d.connector1);
@@ -1082,84 +1144,6 @@ function criteriaOneLiner(c) {
   if (dStr) parts.push(`<span class="tier-tag d">DEACTIVATE</span>${esc(dStr)}`);
   if (rStr) parts.push(`<span class="tier-tag r">REVIEW</span>${esc(rStr)}`);
   return parts.join('<br>') + (activeLabel ? `<br><span style="color:var(--muted2)">${esc(activeLabel.slice(3))}</span>` : '');
-}
-
-function renderHistorySection(imports, analyses, exports) {
-  const el = document.getElementById('history-section');
-  if (!imports.length && !exports.length) { el.innerHTML = ''; return; }
-
-  const importsHtml = imports.length
-    ? imports.map(i => `
-      <div class="import-row">
-        <div class="imp-icon">📥</div>
-        <div>
-          <div class="imp-name">${esc(i.name)}</div>
-          <div class="imp-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)}</div>
-        </div>
-      </div>`).join('')
-    : `<div class="history-empty">No imports yet.</div>`;
-
-  function countBadges(s) {
-    return [
-      s.deactivate!=null?`<span class="exp-count deactivate">🔴 ${s.deactivate}</span>`:'',
-      s.review    !=null?`<span class="exp-count review">🟡 ${s.review}</span>`:'',
-      s.keep      !=null?`<span class="exp-count keep">🟢 ${s.keep}</span>`:'',
-    ].join('');
-  }
-
-  const analysesHtml = analyses.length
-    ? analyses.map(a => {
-        const s = a.summary||{};
-        const critLine = criteriaOneLiner(a.criteria);
-        return `
-        <div class="analysis-card" id="acard-${a.id}" onclick="reloadAnalysis('${a.id}')">
-          <div class="export-card-top">
-            <div>
-              <div class="export-card-name">📊 ${esc(a.name)}</div>
-              <div class="export-card-meta">${fmtDateShort(a.created_at)}${a.import_name?' · '+esc(a.import_name):''}</div>
-            </div>
-            <div class="export-card-counts">${countBadges(s)}</div>
-          </div>
-          ${critLine?`<div class="export-criteria-line">${critLine}</div>`:''}
-        </div>`;
-      }).join('')
-    : `<div class="history-empty">No saved analyses yet.</div>`;
-
-  const exportsHtml = exports.length
-    ? exports.map(e => {
-        const s = e.summary||{};
-        const critLine = criteriaOneLiner(e.criteria);
-        const csvData  = JSON.stringify(e.results_csv||'');
-        const nameData = JSON.stringify(e.name||'export');
-        return `
-        <div class="export-card">
-          <div class="export-card-top">
-            <div>
-              <div class="export-card-name">📤 ${esc(e.name)}</div>
-              <div class="export-card-meta">${fmtDateShort(e.created_at)}${e.import_name?' · '+esc(e.import_name):''}</div>
-            </div>
-            <div class="export-card-counts">${countBadges(s)}</div>
-          </div>
-          ${critLine?`<div class="export-criteria-line">${critLine}</div>`:''}
-          <button class="dl-btn" onclick="redownloadExport(${nameData},${csvData})">↓ Re-download CSV</button>
-        </div>`;
-      }).join('')
-    : `<div class="history-empty">No exports yet.</div>`;
-
-  el.innerHTML = `
-    <div class="history-section-wrap">
-      <div class="section-title" style="margin-bottom:14px">History</div>
-      <div class="history-cols">
-        <div>
-          <div class="history-col-label">Imports</div>
-          ${importsHtml}
-        </div>
-        <div>
-          <div class="history-col-label">Exports</div>
-          ${exportsHtml}
-        </div>
-      </div>
-    </div>`;
 }
 
 let _loadedAnalysisId = null;
@@ -1268,12 +1252,12 @@ function restoreCriteria(c) {
   if (c.activeFilter) setActiveFilter(c.activeFilter);
 }
 
-function redownloadExport(name, csv) {
-  if (!csv) return;
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = `${name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}.csv`;
-  a.click();
+async function redownloadImport(id, name) {
+  toast('Preparing download…');
+  const { data, error } = await sb.from('imports').select('csv_data,name').eq('id', id).single();
+  if (error || !data?.csv_data) { toast('Could not fetch import data', 'error'); return; }
+  const csv = Papa.unparse(data.csv_data);
+  triggerCsvDownload(csv, data.name || name);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────
