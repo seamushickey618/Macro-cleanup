@@ -30,7 +30,8 @@
     --r: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden; }
+  .page-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
   /* ── HEADER ── */
   header {
@@ -57,7 +58,7 @@
   #export-btn:hover { opacity: .85; }
 
   /* ── LAYOUT ── */
-  .main { display: flex; height: calc(100vh - 55px); overflow: hidden; width: 100%; }
+  .main { display: flex; overflow: hidden; width: 100%; flex: 1; min-height: 0; }
   .sidebar { width: 310px; min-width: 310px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; }
   .sidebar-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
   .sidebar-section:last-child { border-bottom: none; }
@@ -196,9 +197,42 @@
   .page-btn:disabled { opacity: .3; cursor: not-allowed; }
   .page-info { font-size: 11px; color: var(--muted); margin: 0 8px; font-family: 'DM Mono', monospace; }
 
+  /* ── SIDEBAR ANALYSES ── */
+  .analyses-list { display: flex; flex-direction: column; gap: 6px; }
+  .ana-item { padding: 9px 11px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s; }
+  .ana-item:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .ana-item.active-card { border-color: var(--accent); background: var(--accent-glow); }
+  .ana-item-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ana-item-meta { font-size: 10px; color: var(--muted2); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .ana-item-counts { display: flex; gap: 4px; margin-top: 4px; }
+  .ana-pill { font-size: 10px; font-family: 'DM Mono', monospace; padding: 1px 6px; border-radius: 20px; font-weight: 600; }
+  .ana-pill.d { background: var(--deactivate-bg); color: var(--deactivate); }
+  .ana-pill.r { background: var(--review-bg); color: var(--review); }
+  .ana-pill.k { background: var(--keep-bg); color: var(--keep); }
+  .ana-empty { font-size: 11px; color: var(--muted2); text-align: center; padding: 12px 0; }
+  .ana-saved-by { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; color: var(--muted); }
+
+  /* ── LOADED ANALYSIS BAR ── */
+  #loaded-bar { display: none; background: var(--surface2); border-bottom: 1px solid var(--border); padding: 8px 28px; align-items: center; gap: 12px; flex-shrink: 0; }
+  #loaded-bar.visible { display: flex; }
+  .lb-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); white-space: nowrap; }
+  .lb-name  { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+  .lb-meta  { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .lb-pills { display: flex; gap: 5px; flex-shrink: 0; }
+  .lb-pill  { font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+  .lb-pill.d { background: var(--deactivate-bg); color: var(--deactivate); }
+  .lb-pill.r { background: var(--review-bg); color: var(--review); }
+  .lb-pill.k { background: var(--keep-bg); color: var(--keep); }
+  .lb-nav   { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
+  .lb-nav button { padding: 3px 9px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; }
+  .lb-nav button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .lb-nav button:disabled { opacity: .3; cursor: not-allowed; }
+  .lb-close { padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); font-size: 12px; cursor: pointer; flex-shrink: 0; transition: all .15s; margin-left: 4px; }
+  .lb-close:hover { border-color: var(--deactivate); color: var(--deactivate); }
+
   /* ── HISTORY SECTION ── */
   .history-section-wrap { border-top: 1px solid var(--border); padding-top: 22px; margin-top: 6px; }
-  .history-cols { display: grid; grid-template-columns: 1fr 1.4fr 1.4fr; gap: 16px; }
+  .history-cols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
   .history-col-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
   .history-empty { color: var(--muted2); font-size: 12px; padding: 10px 0; }
 
@@ -270,8 +304,23 @@
   </div>
 </header>
 
+<div class="page-body">
+<div id="loaded-bar">
+  <div class="lb-label">Viewing</div>
+  <div>
+    <div class="lb-name" id="lb-name"></div>
+    <div class="lb-meta" id="lb-meta"></div>
+  </div>
+  <div class="lb-pills" id="lb-pills"></div>
+  <div class="lb-nav">
+    <button id="lb-prev" onclick="navAnalysis(-1)" title="Previous analysis">‹ Prev</button>
+    <button id="lb-next" onclick="navAnalysis(1)"  title="Next analysis">Next ›</button>
+  </div>
+  <button class="lb-close" onclick="clearLoadedBar()" title="Close">✕</button>
+</div>
+
 <div class="main">
-  <aside class="sidebar">
+<aside class="sidebar">
 
     <div class="sidebar-section">
       <div class="section-label">Data Source</div>
@@ -425,6 +474,16 @@
       <button id="run-btn" disabled onclick="runAnalysis()">Run Analysis</button>
     </div>
 
+    <div class="sidebar-section" style="flex:1;min-height:0;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-label" style="margin-bottom:0">Saved Analyses</div>
+        <span id="ana-refresh-dot" style="width:6px;height:6px;border-radius:50%;background:var(--keep);display:none"></span>
+      </div>
+      <div class="analyses-list" id="analyses-list">
+        <div class="ana-empty">Loading…</div>
+      </div>
+    </div>
+
   </aside>
 
   <main class="content" id="content">
@@ -435,7 +494,8 @@
     </div>
     <div id="history-section"></div>
   </main>
-</div>
+</div><!-- /.main -->
+</div><!-- /.page-body -->
 
 <!-- ── MODALS ── -->
 <div class="modal-overlay hidden" id="import-modal">
@@ -465,8 +525,9 @@
 <div class="modal-overlay hidden" id="save-modal">
   <div class="modal">
     <h3>Save Analysis</h3>
-    <p>Name this analysis so your team can reload it later. The criteria and import data will be saved — clicking it in History will restore everything exactly.</p>
-    <input type="text" id="save-name-input" placeholder="e.g. Q2 review — conservative" maxlength="120">
+    <p>Name this analysis so your team can reload it later. The criteria and import data will be saved — anyone can click it in the sidebar to restore exactly.</p>
+    <input type="text" id="save-name-input" placeholder="e.g. Q2 review — conservative" maxlength="120" style="margin-bottom:10px">
+    <input type="text" id="save-author-input" placeholder="Your name (e.g. Sarah)" maxlength="60" style="margin-bottom:16px">
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('save-modal')">Cancel</button>
       <button class="btn-primary" onclick="confirmSaveAnalysis()">Save</button>
@@ -497,8 +558,12 @@ let currentImportName = null;
 let pendingFile = null;
 let lastCfg = null;
 
-// load history on page ready
-window.addEventListener('DOMContentLoaded', loadHistory);
+// load history on page ready, poll sidebar analyses every 30s
+window.addEventListener('DOMContentLoaded', () => {
+  loadHistory();
+  loadSidebarAnalyses();
+  setInterval(loadSidebarAnalyses, 30000);
+});
 
 // ── TOAST ────────────────────────────────────────────────────────
 function toast(msg, type='success') {
@@ -843,13 +908,16 @@ function promptSaveAnalysis() {
   document.getElementById('save-name-input').value = currentImportName
     ? `${currentImportName} — analysis`
     : `Analysis ${new Date().toISOString().slice(0,10)}`;
+  document.getElementById('save-author-input').value = localStorage.getItem('macro_author') || '';
   openModal('save-modal');
 }
 
 async function confirmSaveAnalysis() {
-  const name = document.getElementById('save-name-input').value.trim() ||
-    `Analysis ${new Date().toISOString().slice(0,10)}`;
+  const name   = document.getElementById('save-name-input').value.trim()   || `Analysis ${new Date().toISOString().slice(0,10)}`;
+  const author = document.getElementById('save-author-input').value.trim() || 'Anonymous';
+  localStorage.setItem('macro_author', author);
   closeModal('save-modal');
+
   const byTier = t => results.filter(r => r.tier === t);
   const summary = {
     total: results.length,
@@ -862,11 +930,12 @@ async function confirmSaveAnalysis() {
   try {
     const { error } = await sb.from('exports').insert({
       import_id: currentImportId, import_name: currentImportName,
-      name, criteria, summary, results_csv: '', type: 'analysis',
+      name, criteria, summary, results_csv: '', type: 'analysis', saved_by: author,
     });
     if (error) throw error;
     toast(`Analysis "${name}" saved`);
     loadHistory();
+    loadSidebarAnalyses();
   } catch(e) {
     console.error(e);
     toast('Save failed', 'error');
@@ -945,6 +1014,49 @@ async function saveAndDownloadExport(name) {
   a.click();
 }
 
+// ── SIDEBAR ANALYSES ──────────────────────────────────────────────
+async function loadSidebarAnalyses() {
+  const { data, error } = await sb.from('exports')
+    .select('id,name,created_at,summary,saved_by,import_name')
+    .eq('type','analysis')
+    .order('created_at',{ascending:false})
+    .limit(40);
+
+  const el = document.getElementById('analyses-list');
+  if (!el) return;
+  if (error || !data?.length) {
+    el.innerHTML = `<div class="ana-empty">${error ? 'Could not load.' : 'No saved analyses yet.'}</div>`;
+    return;
+  }
+
+  // Flash dot if list changed
+  const newIds = data.map(d=>d.id).join();
+  if (el._lastIds && el._lastIds !== newIds) {
+    const dot = document.getElementById('ana-refresh-dot');
+    if (dot) { dot.style.display='block'; setTimeout(()=>dot.style.display='none',2500); }
+  }
+  el._lastIds = newIds;
+  if (_loadedAnalysisId) setTimeout(updateNavButtons, 0);
+
+  const currentActive = document.querySelector('.ana-item.active-card')?.dataset?.id;
+  el.innerHTML = data.map(a => {
+    const s = a.summary||{};
+    const isActive = a.id === currentActive;
+    return `<div class="ana-item${isActive?' active-card':''}" data-id="${a.id}" onclick="reloadAnalysis('${a.id}')">
+      <div class="ana-item-name">${esc(a.name)}</div>
+      <div class="ana-item-meta">
+        <span class="ana-saved-by">👤 ${esc(a.saved_by||'Anonymous')}</span>
+        <span>${fmtDateShort(a.created_at)}</span>
+      </div>
+      <div class="ana-item-counts">
+        ${s.deactivate!=null?`<span class="ana-pill d">🔴 ${s.deactivate}</span>`:''}
+        ${s.review    !=null?`<span class="ana-pill r">🟡 ${s.review}</span>`:''}
+        ${s.keep      !=null?`<span class="ana-pill k">🟢 ${s.keep}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── HISTORY ───────────────────────────────────────────────────────
 async function loadHistory() {
   const [impRes, anaRes, expRes] = await Promise.all([
@@ -974,7 +1086,7 @@ function criteriaOneLiner(c) {
 
 function renderHistorySection(imports, analyses, exports) {
   const el = document.getElementById('history-section');
-  if (!imports.length && !analyses.length && !exports.length) { el.innerHTML = ''; return; }
+  if (!imports.length && !exports.length) { el.innerHTML = ''; return; }
 
   const importsHtml = imports.length
     ? imports.map(i => `
@@ -1043,10 +1155,6 @@ function renderHistorySection(imports, analyses, exports) {
           ${importsHtml}
         </div>
         <div>
-          <div class="history-col-label">Saved Analyses</div>
-          ${analysesHtml}
-        </div>
-        <div>
           <div class="history-col-label">Exports</div>
           ${exportsHtml}
         </div>
@@ -1054,16 +1162,22 @@ function renderHistorySection(imports, analyses, exports) {
     </div>`;
 }
 
+let _loadedAnalysisId = null;
+
 async function reloadAnalysis(id) {
-  // Swap active highlight
-  document.querySelectorAll('.analysis-card').forEach(c => c.classList.remove('active-card'));
-  const card = document.getElementById('acard-' + id);
-  if (card) card.classList.add('active-card');
+  document.querySelectorAll('.ana-item, .analysis-card').forEach(c => c.classList.remove('active-card'));
+  document.querySelectorAll(`[data-id="${id}"], #acard-${id}`).forEach(c => c.classList.add('active-card'));
+
+  // Scroll active item into view in sidebar
+  const sidebarItem = document.querySelector(`.ana-item[data-id="${id}"]`);
+  if (sidebarItem) sidebarItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 
   toast('Loading…', 'success');
 
   const { data: rec, error } = await sb.from('exports').select('*').eq('id', id).single();
   if (error || !rec) { toast('Could not load analysis', 'error'); return; }
+
+  _loadedAnalysisId = id;
 
   if (rec.criteria) restoreCriteria(rec.criteria);
 
@@ -1081,10 +1195,47 @@ async function reloadAnalysis(id) {
 
   if (rawRows.length) {
     runAnalysis();
+    showLoadedBar(rec);
     toast(`Loaded: ${rec.name}`);
   } else {
+    showLoadedBar(rec);
     toast('No import linked — criteria restored, upload a CSV to re-run', 'error');
   }
+}
+
+function showLoadedBar(rec) {
+  const bar = document.getElementById('loaded-bar');
+  const s = rec.summary || {};
+  document.getElementById('lb-name').textContent = rec.name;
+  document.getElementById('lb-meta').textContent =
+    `${rec.saved_by || 'Anonymous'} · ${fmtDateShort(rec.created_at)}${rec.import_name ? ' · ' + rec.import_name : ''}`;
+  document.getElementById('lb-pills').innerHTML = [
+    s.deactivate != null ? `<span class="lb-pill d">🔴 ${s.deactivate}</span>` : '',
+    s.review     != null ? `<span class="lb-pill r">🟡 ${s.review}</span>`     : '',
+    s.keep       != null ? `<span class="lb-pill k">🟢 ${s.keep}</span>`       : '',
+  ].join('');
+  bar.classList.add('visible');
+  updateNavButtons();
+}
+
+function clearLoadedBar() {
+  document.getElementById('loaded-bar').classList.remove('visible');
+  _loadedAnalysisId = null;
+  document.querySelectorAll('.ana-item, .analysis-card').forEach(c => c.classList.remove('active-card'));
+}
+
+function updateNavButtons() {
+  const items = [...document.querySelectorAll('.ana-item[data-id]')];
+  const idx = items.findIndex(el => el.dataset.id === _loadedAnalysisId);
+  document.getElementById('lb-prev').disabled = idx <= 0;
+  document.getElementById('lb-next').disabled = idx < 0 || idx >= items.length - 1;
+}
+
+function navAnalysis(dir) {
+  const items = [...document.querySelectorAll('.ana-item[data-id]')];
+  const idx = items.findIndex(el => el.dataset.id === _loadedAnalysisId);
+  const next = items[idx + dir];
+  if (next) reloadAnalysis(next.dataset.id);
 }
 
 function restoreCriteria(c) {
