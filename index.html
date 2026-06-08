@@ -54,12 +54,8 @@
   #export-btn { display: none; padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
   #export-btn:hover { opacity: .85; }
 
-  /* ── PAGES ── */
-  .page { display: none; }
-  .page.active { display: flex; }
-
-  /* ── ANALYSIS PAGE ── */
-  .main { height: calc(100vh - 55px); overflow: hidden; width: 100%; }
+  /* ── LAYOUT ── */
+  .main { display: flex; height: calc(100vh - 55px); overflow: hidden; width: 100%; }
   .sidebar { width: 310px; min-width: 310px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; }
   .sidebar-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
   .sidebar-section:last-child { border-bottom: none; }
@@ -198,50 +194,36 @@
   .page-btn:disabled { opacity: .3; cursor: not-allowed; }
   .page-info { font-size: 11px; color: var(--muted); margin: 0 8px; font-family: 'DM Mono', monospace; }
 
-  /* ── HISTORY PAGE ── */
-  .history-page { flex-direction: column; height: calc(100vh - 55px); overflow: hidden; width: 100%; }
-  .history-layout { display: flex; flex: 1; overflow: hidden; }
-  .history-sidebar { width: 320px; min-width: 320px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; }
-  .history-content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+  /* ── HISTORY SECTION ── */
+  .history-section-wrap { border-top: 1px solid var(--border); padding-top: 22px; margin-top: 6px; }
+  .history-cols { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+  .history-col-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .history-empty { color: var(--muted2); font-size: 12px; padding: 10px 0; }
 
-  .history-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
-  .history-list-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--r); cursor: pointer; transition: background .15s; margin-bottom: 4px; border: 1px solid transparent; }
-  .history-list-item:hover { background: var(--surface2); }
-  .history-list-item.selected { background: var(--accent-glow); border-color: rgba(91,106,240,.3); }
-  .history-list-item .item-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
-  .history-list-item .item-body { flex: 1; min-width: 0; }
-  .history-list-item .item-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .history-list-item .item-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
-  .history-list-item .item-badge { font-size: 10px; font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--muted); white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+  /* Import rows */
+  .import-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); margin-bottom: 6px; }
+  .import-row .imp-icon { font-size: 14px; flex-shrink: 0; }
+  .import-row .imp-name { font-size: 12px; font-weight: 500; color: var(--text); }
+  .import-row .imp-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 1px; }
 
-  .history-empty { padding: 28px 18px; text-align: center; color: var(--muted2); font-size: 12px; }
-
-  .detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 24px; margin-bottom: 20px; }
-  .detail-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .detail-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 16px; }
-  .detail-section-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; margin-top: 16px; }
-  .detail-section-label:first-of-type { margin-top: 0; }
-
-  .criteria-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .criteria-table th { text-align: left; padding: 7px 10px; background: var(--surface2); border: 1px solid var(--border); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-  .criteria-table td { padding: 7px 10px; border: 1px solid var(--border); vertical-align: middle; font-family: 'DM Mono', monospace; font-size: 11.5px; color: var(--text); }
-  .criteria-table td.na { color: var(--muted2); font-style: italic; }
-  .connector-chip { display: inline-block; font-size: 9px; font-weight: 700; font-family: 'DM Mono', monospace; padding: 1px 6px; border-radius: 10px; margin: 0 4px; }
-  .connector-chip.and { background: var(--deactivate-bg); color: var(--deactivate); border: 1px solid rgba(224,92,92,.3); }
-  .connector-chip.or  { background: var(--review-bg); color: var(--review); border: 1px solid rgba(232,162,58,.3); }
-
-  .summary-mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .mini-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
-  .mini-stat-label { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 4px; }
-  .mini-stat-value { font-size: 20px; font-weight: 300; font-family: 'DM Mono', monospace; }
-  .mini-stat-value.deactivate { color: var(--deactivate); }
-  .mini-stat-value.review { color: var(--review); }
-  .mini-stat-value.keep { color: var(--keep); }
-
-  .dl-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); font-size: 12px; font-family: inherit; color: var(--text); cursor: pointer; transition: all .15s; }
+  /* Export cards */
+  .export-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s; }
+  .export-card:hover { border-color: var(--accent); }
+  .export-card.active-card { border-color: var(--accent); background: var(--accent-glow); }
+  .export-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .export-card-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .export-card-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .export-card-counts { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+  .exp-count { font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+  .exp-count.deactivate { background: var(--deactivate-bg); color: var(--deactivate); }
+  .exp-count.review    { background: var(--review-bg); color: var(--review); }
+  .exp-count.keep      { background: var(--keep-bg); color: var(--keep); }
+  .export-criteria-line { font-size: 11px; color: var(--muted2); font-family: 'DM Mono', monospace; margin-bottom: 8px; line-height: 1.6; }
+  .export-criteria-line span.tier-tag { font-size: 10px; font-weight: 700; letter-spacing: .04em; margin-right: 4px; }
+  .export-criteria-line span.tier-tag.d { color: var(--deactivate); }
+  .export-criteria-line span.tier-tag.r { color: var(--review); }
+  .dl-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px; font-size: 11px; font-family: inherit; color: var(--muted); cursor: pointer; transition: all .15s; }
   .dl-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  .history-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--muted2); }
 
   /* ── MODAL ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: flex; align-items: center; justify-content: center; }
@@ -279,17 +261,12 @@
       <div class="logo-sub">Zendesk — Audit Tool</div>
     </div>
   </div>
-  <div class="tab-nav">
-    <button class="active" onclick="showPage('analysis')">Analysis</button>
-    <button onclick="showPage('history')">History</button>
-  </div>
   <div class="header-right">
     <button id="export-btn" onclick="promptExport()">↓ Export Results</button>
   </div>
 </header>
 
-<!-- ── ANALYSIS PAGE ── -->
-<div id="page-analysis" class="page active main" style="display:flex">
+<div class="main">
   <aside class="sidebar">
 
     <div class="sidebar-section">
@@ -452,34 +429,8 @@
       <div class="empty-title">No data loaded</div>
       <div class="empty-sub">Upload your Zendesk macros CSV, configure criteria in the sidebar, then run.</div>
     </div>
+    <div id="history-section"></div>
   </main>
-</div>
-
-<!-- ── HISTORY PAGE ── -->
-<div id="page-history" class="page history-page">
-  <div class="history-layout">
-    <aside class="history-sidebar">
-
-      <div class="history-section">
-        <div class="section-label">Imports</div>
-        <div id="imports-list"><div class="history-empty">Loading…</div></div>
-      </div>
-
-      <div class="history-section">
-        <div class="section-label">Exports</div>
-        <div id="exports-list"><div class="history-empty">Loading…</div></div>
-      </div>
-
-    </aside>
-
-    <div class="history-content" id="history-detail">
-      <div class="history-placeholder">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title" style="color:var(--muted)">Select an import or export</div>
-        <div class="empty-sub">Click any item in the sidebar to view details.</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- ── MODALS ── -->
@@ -530,14 +481,8 @@ let currentImportName = null;
 let pendingFile = null;
 let lastCfg = null;
 
-// ── PAGE NAV ─────────────────────────────────────────────────────
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-nav button').forEach((b,i) => b.classList.toggle('active', ['analysis','history'][i]===name));
-  const el = document.getElementById('page-' + name);
-  el.classList.add('active');
-  if (name === 'history') loadHistory();
-}
+// load history on page ready
+window.addEventListener('DOMContentLoaded', loadHistory);
 
 // ── TOAST ────────────────────────────────────────────────────────
 function toast(msg, type='success') {
@@ -591,6 +536,7 @@ function parseAndSaveImport(file, name) {
         currentImportId = data.id;
         currentImportName = name;
         toast(`Import "${name}" saved to History`);
+        loadHistory();
       } catch(e) {
         console.error('Import save failed:', e);
         toast('Import saved locally (Supabase error)', 'error');
@@ -938,6 +884,7 @@ async function saveAndDownloadExport(name) {
     });
     if (error) throw error;
     toast(`Export "${name}" saved to History`);
+    loadHistory();
   } catch(e) {
     console.error('Export save failed:', e);
     toast('Download started (Supabase save failed)', 'error');
@@ -953,125 +900,155 @@ async function saveAndDownloadExport(name) {
 // ── HISTORY ───────────────────────────────────────────────────────
 async function loadHistory() {
   const [impRes, expRes] = await Promise.all([
-    sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(50),
-    sb.from('exports').select('id,name,created_at,import_name,summary').order('created_at',{ascending:false}).limit(50),
+    sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(30),
+    sb.from('exports').select('id,name,created_at,import_name,summary,criteria,results_csv').order('created_at',{ascending:false}).limit(30),
   ]);
-
-  renderHistoryList('imports-list', impRes.data||[], 'import');
-  renderHistoryList('exports-list', expRes.data||[], 'export');
+  renderHistorySection(impRes.data||[], expRes.data||[]);
 }
 
-function renderHistoryList(elId, items, type) {
-  const el = document.getElementById(elId);
-  if (!items.length) { el.innerHTML = `<div class="history-empty">No ${type}s yet.</div>`; return; }
-  el.innerHTML = items.map(item => {
-    const meta = type==='import'
-      ? `${item.row_count} rows · ${fmtDateShort(item.created_at)}`
-      : `${item.import_name ? 'From: '+item.import_name+' · ' : ''}${fmtDateShort(item.created_at)}`;
-    const icon = type==='import' ? '📥' : '📤';
-    return `<div class="history-list-item" onclick="showDetail('${type}','${item.id}')">
-      <div class="item-icon">${icon}</div>
-      <div class="item-body">
-        <div class="item-name">${esc(item.name)}</div>
-        <div class="item-meta">${meta}</div>
+function criteriaOneLiner(c) {
+  if (!c) return '';
+  const d = c.deactivate||{}, r = c.review||{};
+  const fmt = crit => crit ? `${crit.op==='lte'?'≤':'<'} ${crit.value}` : null;
+  const join = (parts, conn) => parts.filter(Boolean).join(` ${(conn||'AND').toUpperCase()} `);
+
+  const dParts = [d.usage?`usage ${fmt(d.usage)}`:null, d.created?`created ${fmt(d.created)}`:null, d.updated?`updated ${fmt(d.updated)}`:null];
+  const rParts = [r.usage?`usage ${fmt(r.usage)}`:null, r.created?`created ${fmt(r.created)}`:null, r.updated?`updated ${fmt(r.updated)}`:null];
+  const dStr = join(dParts, d.connector1);
+  const rStr = join(rParts, r.connector1);
+  const activeLabel = c.activeFilter==='true'?' · active only':c.activeFilter==='false'?' · inactive only':'';
+  const parts = [];
+  if (dStr) parts.push(`<span class="tier-tag d">DEACTIVATE</span>${esc(dStr)}`);
+  if (rStr) parts.push(`<span class="tier-tag r">REVIEW</span>${esc(rStr)}`);
+  return parts.join('<br>') + (activeLabel ? `<br><span style="color:var(--muted2)">${esc(activeLabel.slice(3))}</span>` : '');
+}
+
+function renderHistorySection(imports, exports) {
+  const el = document.getElementById('history-section');
+  if (!imports.length && !exports.length) { el.innerHTML = ''; return; }
+
+  const importsHtml = imports.length
+    ? imports.map(i => `
+      <div class="import-row">
+        <div class="imp-icon">📥</div>
+        <div>
+          <div class="imp-name">${esc(i.name)}</div>
+          <div class="imp-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)}</div>
+        </div>
+      </div>`).join('')
+    : `<div class="history-empty">No imports yet.</div>`;
+
+  const exportsHtml = exports.length
+    ? exports.map(e => {
+        const s = e.summary||{};
+        const countBadges = [
+          s.deactivate!=null?`<span class="exp-count deactivate">🔴 ${s.deactivate}</span>`:'',
+          s.review    !=null?`<span class="exp-count review">🟡 ${s.review}</span>`:'',
+          s.keep      !=null?`<span class="exp-count keep">🟢 ${s.keep}</span>`:'',
+        ].join('');
+        const critLine = criteriaOneLiner(e.criteria);
+        const csvData  = JSON.stringify(e.results_csv||'');
+        const nameData = JSON.stringify(e.name||'export');
+        return `
+        <div class="export-card" id="ecard-${e.id}" onclick="reloadExport('${e.id}')">
+          <div class="export-card-top">
+            <div>
+              <div class="export-card-name">📤 ${esc(e.name)}</div>
+              <div class="export-card-meta">${fmtDateShort(e.created_at)}${e.import_name?' · from: '+esc(e.import_name):''}</div>
+            </div>
+            <div class="export-card-counts">${countBadges}</div>
+          </div>
+          ${critLine?`<div class="export-criteria-line">${critLine}</div>`:''}
+          <button class="dl-btn" onclick="event.stopPropagation();redownloadExport(${nameData},${csvData})">↓ Re-download CSV</button>
+        </div>`;
+      }).join('')
+    : `<div class="history-empty">No exports yet.</div>`;
+
+  el.innerHTML = `
+    <div class="history-section-wrap">
+      <div class="section-title" style="margin-bottom:14px">History</div>
+      <div class="history-cols">
+        <div>
+          <div class="history-col-label">Imports</div>
+          ${importsHtml}
+        </div>
+        <div>
+          <div class="history-col-label">Exports</div>
+          ${exportsHtml}
+        </div>
       </div>
     </div>`;
-  }).join('');
 }
 
-async function showDetail(type, id) {
-  // Highlight selection
-  document.querySelectorAll('.history-list-item').forEach(el => el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
+async function reloadExport(exportId) {
+  // Highlight card
+  document.querySelectorAll('.export-card').forEach(c => c.classList.remove('active-card'));
+  const card = document.getElementById('ecard-' + exportId);
+  if (card) card.classList.add('active-card');
 
-  const el = document.getElementById('history-detail');
-  el.innerHTML = `<div style="color:var(--muted2);font-size:13px;padding:40px">Loading…</div>`;
+  toast('Loading export…', 'success');
 
-  if (type==='import') {
-    const {data} = await sb.from('imports').select('*').eq('id',id).single();
-    if (!data) { el.innerHTML = `<div style="color:var(--muted2);padding:40px">Not found.</div>`; return; }
-    el.innerHTML = `
-      <div class="detail-card">
-        <h3>${esc(data.name)}</h3>
-        <div class="detail-meta">📥 Import · ${data.row_count} rows · uploaded ${fmtDateLong(data.created_at)}</div>
-        <div class="detail-section-label">Raw rows preview (first 5)</div>
-        ${renderRowPreview(data.csv_data)}
-      </div>`;
+  // Fetch full export
+  const { data: exp, error: eErr } = await sb.from('exports').select('*').eq('id', exportId).single();
+  if (eErr || !exp) { toast('Could not load export', 'error'); return; }
+
+  // Restore criteria to sidebar
+  if (exp.criteria) restoreCriteria(exp.criteria);
+
+  // Load the linked import's CSV data
+  if (exp.import_id) {
+    const { data: imp } = await sb.from('imports').select('id,name,csv_data,row_count').eq('id', exp.import_id).single();
+    if (imp && imp.csv_data) {
+      rawRows = imp.csv_data;
+      currentImportId = imp.id;
+      currentImportName = imp.name;
+      document.getElementById('file-name').textContent = imp.name;
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('run-btn').textContent = `Run Analysis (${imp.row_count} rows)`;
+    }
+  }
+
+  // Re-run with restored criteria
+  if (rawRows.length) {
+    runAnalysis();
+    toast(`Reloaded: ${exp.name}`);
   } else {
-    const {data} = await sb.from('exports').select('*').eq('id',id).single();
-    if (!data) { el.innerHTML = `<div style="color:var(--muted2);padding:40px">Not found.</div>`; return; }
-    el.innerHTML = `
-      <div class="detail-card">
-        <h3>${esc(data.name)}</h3>
-        <div class="detail-meta">📤 Export · ${data.import_name?'from import: '+esc(data.import_name)+' · ':''}saved ${fmtDateLong(data.created_at)}</div>
-
-        <div class="detail-section-label">Results Summary</div>
-        ${renderSummaryMini(data.summary)}
-
-        <div class="detail-section-label">Criteria Used</div>
-        ${renderCriteriaTable(data.criteria)}
-
-        <div style="margin-top:16px">
-          <button class="dl-btn" onclick="redownloadExport(${JSON.stringify(data.name)},${JSON.stringify(data.results_csv)})">↓ Re-download CSV</button>
-        </div>
-      </div>`;
+    toast('No import data linked — criteria restored, upload a CSV to re-run', 'error');
   }
 }
 
-function renderRowPreview(rows) {
-  if (!rows||!rows.length) return '<div class="history-empty">No data.</div>';
-  const preview = rows.slice(0,5);
-  const keys = Object.keys(preview[0]);
-  return `<div class="table-wrap" style="margin-top:0"><table>
-    <thead><tr>${keys.map(k=>`<th>${esc(k)}</th>`).join('')}</tr></thead>
-    <tbody>${preview.map(r=>`<tr>${keys.map(k=>`<td><div class="cell-sub">${esc(String(r[k]||''))}</div></td>`).join('')}</tr>`).join('')}</tbody>
-  </table></div>`;
-}
+function restoreCriteria(c) {
+  const d = c.deactivate || {}, r = c.review || {};
 
-function renderSummaryMini(s) {
-  if (!s) return '<div class="history-empty">No summary.</div>';
-  return `<div class="summary-mini-grid">
-    <div class="mini-stat"><div class="mini-stat-label">Deactivate</div><div class="mini-stat-value deactivate">${s.deactivate??'—'}</div></div>
-    <div class="mini-stat"><div class="mini-stat-label">Review</div><div class="mini-stat-value review">${s.review??'—'}</div></div>
-    <div class="mini-stat"><div class="mini-stat-label">Keep</div><div class="mini-stat-value keep">${s.keep??'—'}</div></div>
-  </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:8px">${s.total??'—'} total families · ${s.conflicts??0} conflicts</div>`;
-}
+  const setNA = (naId, fieldsId, isNull) => {
+    document.getElementById(naId).checked = isNull;
+    document.getElementById(fieldsId).classList.toggle('disabled', isNull);
+  };
 
-function renderCriteriaTable(c) {
-  if (!c) return '<div class="history-empty">No criteria saved.</div>';
-  const activeLabel = c.activeFilter==='true'?'Active only':c.activeFilter==='false'?'Inactive only':'All';
+  if (d.usage != null)   { setNA('d-usage-na','d-usage-fields',false); document.getElementById('d-usage').value = d.usage.value; }
+  else                   { setNA('d-usage-na','d-usage-fields',true); }
+  if (d.created != null) { setNA('d-created-na','d-created-fields',false); document.getElementById('d-created').value = d.created.value; }
+  else                   { setNA('d-created-na','d-created-fields',true); }
+  if (d.updated != null) { setNA('d-updated-na','d-updated-fields',false); document.getElementById('d-updated').value = d.updated.value; }
+  else                   { setNA('d-updated-na','d-updated-fields',true); }
 
-  function criterionRow(label, crit, connectorAfter, connectorVal) {
-    const val = crit ? `${crit.op === 'lte' ? '≤' : crit.op === 'lt' ? '<' : crit.op} ${crit.value}` : null;
-    const conn = connectorAfter && connectorVal
-      ? `<span class="connector-chip ${connectorVal}">${connectorVal.toUpperCase()}</span>` : '';
-    return `<tr>
-      <td>${label}</td>
-      <td class="${val?'':'na'}">${val||'N/A'}</td>
-      <td>${conn}</td>
-    </tr>`;
-  }
+  if (r.usage != null)   { setNA('r-usage-na','r-usage-fields',false); document.getElementById('r-usage').value = r.usage.value; }
+  else                   { setNA('r-usage-na','r-usage-fields',true); }
+  if (r.created != null) { setNA('r-created-na','r-created-fields',false); document.getElementById('r-created').value = r.created.value; }
+  else                   { setNA('r-created-na','r-created-fields',true); }
+  if (r.updated != null) { setNA('r-updated-na','r-updated-fields',false); document.getElementById('r-updated').value = r.updated.value; }
+  else                   { setNA('r-updated-na','r-updated-fields',true); }
 
-  const d = c.deactivate||{};
-  const r = c.review||{};
+  if (d.connector1) setConnector('d-c1', d.connector1);
+  if (d.connector2) setConnector('d-c2', d.connector2);
+  if (r.connector1) setConnector('r-c1', r.connector1);
+  if (r.connector2) setConnector('r-c2', r.connector2);
 
-  return `<table class="criteria-table">
-    <thead><tr><th>Criterion</th><th>Threshold</th><th>Connector</th></tr></thead>
-    <tbody>
-      <tr><td colspan="3" style="background:var(--deactivate-bg);color:var(--deactivate);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px">Deactivate Tier · Include macros: ${esc(activeLabel)}</td></tr>
-      ${criterionRow('30d usage',d.usage,true,d.connector1)}
-      ${criterionRow('Created before',d.created,true,d.connector2)}
-      ${criterionRow('Updated before',d.updated,false,null)}
-      <tr><td colspan="3" style="background:var(--review-bg);color:var(--review);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px">Review Tier</td></tr>
-      ${criterionRow('30d usage',r.usage,true,r.connector1)}
-      ${criterionRow('Created before',r.created,true,r.connector2)}
-      ${criterionRow('Updated before',r.updated,false,null)}
-    </tbody>
-  </table>`;
+  if (c.activeFilter) setActiveFilter(c.activeFilter);
 }
 
 function redownloadExport(name, csv) {
+  if (!csv) return;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download = `${name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}.csv`;
