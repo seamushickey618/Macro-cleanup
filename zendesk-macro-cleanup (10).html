@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macro Cleanup — Zendesk</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --bg: #0e0f14;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d3a;
+    --border2: #363a4a;
+    --text: #e8eaf2;
+    --muted: #7b7f96;
+    --muted2: #555870;
+    --accent: #5b6af0;
+    --accent-glow: rgba(91,106,240,0.18);
+    --deactivate: #e05c5c;
+    --deactivate-bg: rgba(224,92,92,0.1);
+    --review: #e8a23a;
+    --review-bg: rgba(232,162,58,0.1);
+    --keep: #3dbf82;
+    --keep-bg: rgba(61,191,130,0.1);
+    --warn: #c07ef0;
+    --warn-bg: rgba(192,126,240,0.1);
+    --r: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #fff; font-family: 'DM Mono', monospace; }
+  .logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  #export-btn { display: none; padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+  #export-btn:hover { opacity: .85; }
+
+  .main { display: flex; height: calc(100vh - 55px); overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 310px; min-width: 310px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; }
+  .sidebar-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .sidebar-section:last-child { border-bottom: none; }
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+  /* Upload */
+  .upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--r); padding: 18px 14px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+  .upload-zone:hover, .upload-zone.dragging { border-color: var(--accent); background: var(--accent-glow); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .upload-icon { font-size: 20px; margin-bottom: 5px; }
+  .upload-text { font-size: 12px; color: var(--muted); }
+  .upload-text strong { color: var(--text); font-weight: 500; }
+  #file-name { font-size: 11px; color: var(--accent); margin-top: 7px; font-family: 'DM Mono', monospace; word-break: break-all; }
+
+  /* Active filter toggle */
+  .active-filter-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .active-filter-row label { font-size: 12px; color: var(--muted); margin: 0; }
+  .seg-ctrl { display: flex; background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; }
+  .seg-ctrl button { padding: 4px 12px; border: none; background: transparent; color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .seg-ctrl button.active { background: var(--accent); color: #fff; }
+
+  /* N/A toggle per criterion */
+  .criterion-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .criterion-header label { margin: 0; }
+  .na-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
+  .na-toggle input[type="checkbox"] { display: none; }
+  .na-pill { font-size: 10px; font-weight: 600; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 20px; border: 1px solid var(--border2); color: var(--muted2); background: transparent; transition: all .15s; cursor: pointer; }
+  .na-toggle input:checked + .na-pill { background: var(--surface2); color: var(--muted); border-color: var(--muted2); text-decoration: line-through; }
+  .criterion-body { transition: opacity .2s; }
+  .criterion-body.disabled { opacity: .25; pointer-events: none; }
+
+  /* Criteria inputs */
+  .criterion { margin-bottom: 11px; }
+  .criterion:last-child { margin-bottom: 0; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .input-row { display: flex; gap: 6px; align-items: center; }
+  input[type="number"], input[type="date"] {
+    background: var(--bg); border: 1px solid var(--border2); color: var(--text);
+    border-radius: 6px; padding: 6px 9px; font-family: 'DM Mono', monospace;
+    font-size: 12px; width: 100%; transition: border-color .15s; -webkit-appearance: none;
+  }
+  input[type="number"]:focus, input[type="date"]:focus { outline: none; border-color: var(--accent); }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.5); }
+  .op-badge { font-size: 10px; font-weight: 600; font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+  /* AND/OR connector */
+  .connector-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 10px; }
+  .connector-line { flex: 1; height: 1px; background: var(--border); }
+  .connector-toggle { display: flex; background: var(--bg); border: 1px solid var(--border2); border-radius: 20px; overflow: hidden; flex-shrink: 0; }
+  .connector-toggle button { padding: 3px 10px; border: none; background: transparent; color: var(--muted2); font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; letter-spacing: .05em; }
+  .connector-toggle button.active-or  { background: var(--review); color: #111; }
+  .connector-toggle button.active-and { background: var(--deactivate); color: #fff; }
+
+  /* Tier section header */
+  .tier-section-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .tier-dot-lg { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .tier-dot-lg.deactivate { background: var(--deactivate); }
+  .tier-dot-lg.review { background: var(--review); }
+  .tier-section-hd-text { font-size: 12px; font-weight: 600; }
+  .tier-section-hd-text.deactivate { color: var(--deactivate); }
+  .tier-section-hd-text.review { color: var(--review); }
+  .tier-logic-note { font-size: 10.5px; color: var(--muted2); margin-top: -8px; margin-bottom: 12px; line-height: 1.5; }
+
+  /* Run btn */
+  #run-btn { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 600; cursor: pointer; letter-spacing: .01em; transition: opacity .15s, transform .1s; }
+  #run-btn:disabled { opacity: .35; cursor: not-allowed; }
+  #run-btn:not(:disabled):hover { opacity: .88; }
+  #run-btn:not(:disabled):active { transform: scale(.98); }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 22px; }
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted2); }
+  .empty-icon { font-size: 38px; opacity: .4; }
+  .empty-title { font-size: 16px; font-weight: 500; color: var(--muted); }
+  .empty-sub { font-size: 13px; text-align: center; max-width: 320px; }
+
+  /* Summary cards */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .stat-card.deactivate::before { background: var(--deactivate); }
+  .stat-card.review::before    { background: var(--review); }
+  .stat-card.keep::before      { background: var(--keep); }
+  .stat-card.total::before     { background: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--muted); margin-bottom: 5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .stat-value { font-size: 26px; font-weight: 300; font-family: 'DM Mono', monospace; letter-spacing: -0.02em; }
+  .stat-value.deactivate { color: var(--deactivate); }
+  .stat-value.review    { color: var(--review); }
+  .stat-value.keep      { color: var(--keep); }
+  .stat-value.total     { color: var(--accent); }
+  .stat-sub { font-size: 11px; color: var(--muted2); margin-top: 3px; }
+
+  /* Conflict banner */
+  .conflict-banner { background: var(--warn-bg); border: 1px solid rgba(192,126,240,.25); border-radius: var(--r); padding: 13px 16px; }
+  .conflict-banner h3 { font-size: 13px; font-weight: 600; color: var(--warn); margin-bottom: 7px; }
+  .conflict-list { font-size: 12px; color: var(--muted); line-height: 1.8; }
+  .conflict-list strong { color: var(--text); font-weight: 500; }
+
+  /* Notice */
+  .notice-box { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 13px 16px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+  .notice-box strong { color: var(--text); font-weight: 500; }
+  .notice-box h4 { color: var(--accent); font-size: 12px; font-weight: 600; margin-bottom: 6px; letter-spacing: .02em; }
+  .notice-box ul { margin-left: 16px; margin-top: 4px; }
+  .notice-box code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--bg); padding: 1px 4px; border-radius: 3px; }
+
+  /* Section title */
+  .section-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+  .count-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; font-family: 'DM Mono', monospace; }
+
+  /* Filters row */
+  .filters-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .filter-tab { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 12px; font-family: inherit; cursor: pointer; transition: all .15s; }
+  .filter-tab:hover { border-color: var(--muted); color: var(--text); }
+  .filter-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+  .search-box { margin-left: auto; background: var(--surface); border: 1px solid var(--border2); border-radius: 6px; padding: 5px 10px; color: var(--text); font-family: inherit; font-size: 12px; width: 190px; }
+  .search-box:focus { outline: none; border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted2); }
+
+  /* Table */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead { position: sticky; top: 0; z-index: 2; }
+  th { background: var(--surface2); padding: 9px 13px; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  th .sort-arrow { opacity: .3; margin-left: 3px; font-size: 9px; }
+  th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+  td { padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .cell-title { font-weight: 500; color: var(--text); margin-bottom: 2px; word-break: break-word; }
+  .cell-sub { font-size: 11px; color: var(--muted); }
+  .cell-mono { font-family: 'DM Mono', monospace; font-size: 11.5px; }
+
+  /* Tier pill */
+  .tier-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .tier-pill.deactivate { background: var(--deactivate-bg); color: var(--deactivate); }
+  .tier-pill.review    { background: var(--review-bg); color: var(--review); }
+  .tier-pill.keep      { background: var(--keep-bg); color: var(--keep); }
+  .tier-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .conflict-flag { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--warn); background: var(--warn-bg); border-radius: 4px; padding: 2px 6px; margin-top: 3px; font-weight: 500; }
+
+  /* Usage bar */
+  .usage-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .usage-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; min-width: 40px; }
+  .usage-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* Pagination */
+  .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 10px 13px; border-top: 1px solid var(--border); background: var(--surface2); }
+  .page-btn { padding: 4px 9px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .page-btn:disabled { opacity: .3; cursor: not-allowed; }
+  .page-info { font-size: 11px; color: var(--muted); margin: 0 8px; font-family: 'DM Mono', monospace; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">ZD</div>
+    <div>
+      <div class="logo-text">Macro Cleanup</div>
+      <div class="logo-sub">Zendesk — Audit Tool</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button id="export-btn" onclick="exportCSV()">↓ Export Results</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="sidebar">
+
+    <!-- Upload -->
+    <div class="sidebar-section">
+      <div class="section-label">Data Source</div>
+      <div class="upload-zone" id="drop-zone">
+        <input type="file" id="csv-input" accept=".csv" onchange="handleFile(this.files[0])">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text"><strong>Drop CSV here</strong><br>or click to browse</div>
+        <div id="file-name"></div>
+      </div>
+      <div class="active-filter-row">
+        <label>Include macros</label>
+        <div class="seg-ctrl">
+          <button id="af-true" class="active" onclick="setActiveFilter('true')">Active only</button>
+          <button id="af-all"                 onclick="setActiveFilter('all')">All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEACTIVATE -->
+    <div class="sidebar-section">
+      <div class="tier-section-hd">
+        <div class="tier-dot-lg deactivate"></div>
+        <div class="tier-section-hd-text deactivate">Deactivate Criteria</div>
+      </div>
+
+      <div class="criterion">
+        <div class="criterion-header">
+          <label>30d usage (all languages combined)</label>
+          <label class="na-toggle"><input type="checkbox" id="d-usage-na" onchange="toggleNA('d-usage-fields',this)"><span class="na-pill">N/A</span></label>
+        </div>
+        <div class="criterion-body" id="d-usage-fields">
+          <div class="input-row">
+            <span class="op-badge">≤</span>
+            <input type="number" id="d-usage" value="0" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="connector-row">
+        <div class="connector-line"></div>
+        <div class="connector-toggle">
+          <button id="d-c1-and" class="active-and" onclick="setConnector('d-c1','and')">AND</button>
+          <button id="d-c1-or"                     onclick="setConnector('d-c1','or')">OR</button>
+        </div>
+        <div class="connector-line"></div>
+      </div>
+
+      <div class="criterion">
+        <div class="criterion-header">
+          <label>Created before</label>
+          <label class="na-toggle"><input type="checkbox" id="d-created-na" onchange="toggleNA('d-created-fields',this)"><span class="na-pill">N/A</span></label>
+        </div>
+        <div class="criterion-body" id="d-created-fields">
+          <div class="input-row">
+            <span class="op-badge">&lt;</span>
+            <input type="date" id="d-created" value="2024-01-01">
+          </div>
+        </div>
+      </div>
+
+      <div class="connector-row">
+        <div class="connector-line"></div>
+        <div class="connector-toggle">
+          <button id="d-c2-and" class="active-and" onclick="setConnector('d-c2','and')">AND</button>
+          <button id="d-c2-or"                     onclick="setConnector('d-c2','or')">OR</button>
+        </div>
+        <div class="connector-line"></div>
+      </div>
+
+      <div class="criterion">
+        <div class="criterion-header">
+          <label>Updated before</label>
+          <label class="na-toggle"><input type="checkbox" id="d-updated-na" onchange="toggleNA('d-updated-fields',this)"><span class="na-pill">N/A</span></label>
+        </div>
+        <div class="criterion-body" id="d-updated-fields">
+          <div class="input-row">
+            <span class="op-badge">&lt;</span>
+            <input type="date" id="d-updated" value="2024-01-01">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVIEW -->
+    <div class="sidebar-section">
+      <div class="tier-section-hd">
+        <div class="tier-dot-lg review"></div>
+        <div class="tier-section-hd-text review">Review Criteria</div>
+      </div>
+      <div class="tier-logic-note">Matched when not already flagged for Deactivation.</div>
+
+      <div class="criterion">
+        <div class="criterion-header">
+          <label>30d usage (all languages combined)</label>
+          <label class="na-toggle"><input type="checkbox" id="r-usage-na" onchange="toggleNA('r-usage-fields',this)"><span class="na-pill">N/A</span></label>
+        </div>
+        <div class="criterion-body" id="r-usage-fields">
+          <div class="input-row">
+            <span class="op-badge">&lt;</span>
+            <input type="number" id="r-usage" value="5" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="connector-row">
+        <div class="connector-line"></div>
+        <div class="connector-toggle">
+          <button id="r-c1-and" class="active-and" onclick="setConnector('r-c1','and')">AND</button>
+          <button id="r-c1-or"                     onclick="setConnector('r-c1','or')">OR</button>
+        </div>
+        <div class="connector-line"></div>
+      </div>
+
+      <div class="criterion">
+        <div class="criterion-header">
+          <label>Created before</label>
+          <label class="na-toggle"><input type="checkbox" id="r-created-na" onchange="toggleNA('r-created-fields',this)"><span class="na-pill">N/A</span></label>
+        </div>
+        <div class="criterion-body" id="r-created-fields">
+          <div class="input-row">
+            <span class="op-badge">&lt;</span>
+            <input type="date" id="r-created" value="2025-01-01">
+          </div>
+        </div>
+      </div>
+
+      <div class="connector-row">
+        <div class="connector-line"></div>
+        <div class="connector-toggle">
+          <button id="r-c2-and" class="active-and" onclick="setConnector('r-c2','and')">AND</button>
+          <button id="r-c2-or"                     onclick="setConnector('r-c2','or')">OR</button>
+        </div>
+        <div class="connector-line"></div>
+      </div>
+
+      <div class="criterion">
+        <div class="criterion-header">
+          <label>Updated before</label>
+          <label class="na-toggle"><input type="checkbox" id="r-updated-na" onchange="toggleNA('r-updated-fields',this)"><span class="na-pill">N/A</span></label>
+        </div>
+        <div class="criterion-body" id="r-updated-fields">
+          <div class="input-row">
+            <span class="op-badge">&lt;</span>
+            <input type="date" id="r-updated" value="2025-01-01">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run -->
+    <div class="sidebar-section">
+      <button id="run-btn" disabled onclick="runAnalysis()">Run Analysis</button>
+    </div>
+
+  </aside>
+
+  <main class="content" id="content">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No data loaded</div>
+      <div class="empty-sub">Upload your Zendesk macros CSV, configure criteria in the sidebar, then run.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+let rawRows = [];
+let results = [];
+let currentFilter = 'all';
+let currentSort = { col: 'tier_rank', dir: 'asc' };
+let searchQuery = '';
+let currentPage = 1;
+const PAGE_SIZE = 50;
+
+// connector state: 'and' | 'or'
+const connectors = { 'd-c1': 'and', 'd-c2': 'and', 'r-c1': 'and', 'r-c2': 'and' };
+let activeFilter = 'true'; // 'true' | 'false' | 'all'
+
+// ── UPLOAD / DRAG ─────────────────────────────────────────────
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragging'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+function handleFile(file) {
+  if (!file) return;
+  document.getElementById('file-name').textContent = file.name;
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true,
+    complete: res => {
+      rawRows = res.data;
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('run-btn').textContent = `Run Analysis (${rawRows.length} rows)`;
+    }
+  });
+}
+
+// ── ACTIVE FILTER ─────────────────────────────────────────────
+function setActiveFilter(val) {
+  activeFilter = val;
+  ['true','all'].forEach(v => {
+    document.getElementById('af-' + v).classList.toggle('active', v === val);
+  });
+}
+
+function toggleNA(bodyId, checkbox) {
+  const body = document.getElementById(bodyId);
+  body.classList.toggle('disabled', checkbox.checked);
+}
+
+// ── CONNECTOR TOGGLE ──────────────────────────────────────────
+function setConnector(id, val) {
+  connectors[id] = val;
+  const andBtn = document.getElementById(id + '-and');
+  const orBtn  = document.getElementById(id + '-or');
+  andBtn.className = val === 'and' ? 'active-and' : '';
+  orBtn.className  = val === 'or'  ? 'active-or'  : '';
+}
+
+// ── LANG DETECTION ────────────────────────────────────────────
+const LANG_RE = /^([A-Z]{2,3})\s*[-–]\s*(.+)/i;
+const KNOWN_LANG = new Set(['EN','FR','ES','PT','DE','IT','JA','JP','RU','KO','KOR','SA','SP']);
+
+function extractLangBase(title) {
+  const t = (title || '').trim();
+  const m = LANG_RE.exec(t);
+  if (m) {
+    const c = m[1].toUpperCase();
+    if (KNOWN_LANG.has(c) || c.length === 2) return { lang: c, base: m[2].trim() };
+  }
+  return { lang: 'UNK', base: t };
+}
+function normaliseBase(b) { return b.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+// ── TIER LOGIC ────────────────────────────────────────────────
+function evalTier(fam, cfg) {
+  const { dUsage, dCreated, dUpdated, dC1, dC2, rUsage, rCreated, rUpdated, rC1, rC2 } = cfg;
+
+  // Build an active-conditions-only list and collapse with connectors in order.
+  // N/A fields are simply omitted — their connector is also dropped.
+  function applyChain(conditions, ops) {
+    // conditions: array of booleans (N/A already excluded)
+    // ops: connectors between them (length = conditions.length - 1)
+    if (conditions.length === 0) return false; // all N/A = no criteria = no match
+    let result = conditions[0];
+    for (let i = 1; i < conditions.length; i++) {
+      result = ops[i - 1] === 'and' ? (result && conditions[i]) : (result || conditions[i]);
+    }
+    return result;
+  }
+
+  function buildChain(triples) {
+    // triples: [{val, op_after}] where op_after is the connector to the NEXT item
+    // filter out N/A (val === null), then re-pair remaining conditions with their ops
+    const active = triples.filter(t => t.val !== null);
+    const conds = active.map(t => !!t.val);
+    // ops between consecutive active items: use the op_after of the left item
+    const ops = [];
+    for (let i = 0; i < active.length - 1; i++) {
+      ops.push(active[i].op);
+    }
+    return applyChain(conds, ops);
+  }
+
+  const deactivate = buildChain([
+    { val: dUsage   !== null ? fam.totalUsage30 <= dUsage                               : null, op: dC1 },
+    { val: dCreated !== null ? !!(fam.earliestCreated && fam.earliestCreated < dCreated) : null, op: dC2 },
+    { val: dUpdated !== null ? !!(fam.latestUpdated  && fam.latestUpdated  < dUpdated)  : null, op: null },
+  ]);
+
+  if (deactivate) return { tier: 'deactivate', tierRank: 0 };
+
+  const review = buildChain([
+    { val: rUsage   !== null ? fam.totalUsage30 < rUsage                                : null, op: rC1 },
+    { val: rCreated !== null ? !!(fam.earliestCreated && fam.earliestCreated < rCreated) : null, op: rC2 },
+    { val: rUpdated !== null ? !!(fam.latestUpdated  && fam.latestUpdated  < rUpdated)  : null, op: null },
+  ]);
+
+  if (review) return { tier: 'review', tierRank: 1 };
+  return { tier: 'keep', tierRank: 2 };
+}
+
+// ── ANALYSIS ──────────────────────────────────────────────────
+function runAnalysis() {
+  const naOf = id => document.getElementById(id).checked;
+
+  const cfg = {
+    dUsage:   naOf('d-usage-na')   ? null : (parseInt(document.getElementById('d-usage').value) ?? 0),
+    dCreated: naOf('d-created-na') ? null : new Date(document.getElementById('d-created').value),
+    dUpdated: naOf('d-updated-na') ? null : new Date(document.getElementById('d-updated').value),
+    dC1: connectors['d-c1'], dC2: connectors['d-c2'],
+    rUsage:   naOf('r-usage-na')   ? null : (parseInt(document.getElementById('r-usage').value) ?? 0),
+    rCreated: naOf('r-created-na') ? null : new Date(document.getElementById('r-created').value),
+    rUpdated: naOf('r-updated-na') ? null : new Date(document.getElementById('r-updated').value),
+    rC1: connectors['r-c1'], rC2: connectors['r-c2'],
+  };
+
+  // Parse & apply active filter
+  let rows = rawRows.map(r => {
+    const { lang, base } = extractLangBase(r['Title'] || '');
+    const activeRaw = String(r['Active']).toLowerCase().trim();
+    return {
+      id:         r['Id'] || '',
+      title:      r['Title'] || '',
+      lang, base,
+      baseKey:    normaliseBase(base),
+      category:   r['Category'] || '',
+      usage30:    parseInt(r['Usage 30d']) || 0,
+      usage7:     parseInt(r['Usage 7d']) || 0,
+      createdAt:  r['Created At'] ? new Date(r['Created At']) : null,
+      updatedAt:  r['Updated At'] ? new Date(r['Updated At']) : null,
+      active:     activeRaw === 'true',
+      deactivate: String(r['Deactivate?']).toLowerCase() === 'true',
+      actioned:   String(r['Actioned in ZD']).toLowerCase() === 'true',
+      notes:      r['Deactive reason / Notes'] || '',
+    };
+  });
+
+  if (activeFilter === 'true')  rows = rows.filter(r => r.active);
+  if (activeFilter === 'false') rows = rows.filter(r => !r.active);
+
+  // Group into families
+  const familyMap = {};
+  rows.forEach(r => {
+    const key = r.baseKey || normaliseBase(r.title);
+    if (!familyMap[key]) familyMap[key] = { key, base: r.base || r.title, members: [] };
+    familyMap[key].members.push(r);
+  });
+
+  results = Object.values(familyMap).map(fam => {
+    const members = fam.members;
+    const totalUsage30 = members.reduce((s, m) => s + m.usage30, 0);
+    const langs = [...new Set(members.map(m => m.lang))].filter(l => l !== 'UNK').sort();
+    const createdDates = members.map(m => m.createdAt).filter(Boolean);
+    const updatedDates = members.map(m => m.updatedAt).filter(Boolean);
+    const earliestCreated = createdDates.length ? new Date(Math.min(...createdDates)) : null;
+    const latestUpdated   = updatedDates.length  ? new Date(Math.max(...updatedDates)) : null;
+    const hasDeactivateConflict = new Set(members.map(m => m.deactivate)).size > 1;
+    const hasActionedConflict   = new Set(members.map(m => m.actioned)).size > 1;
+    const hasConflict = hasDeactivateConflict || hasActionedConflict;
+    const { tier, tierRank } = evalTier({ totalUsage30, earliestCreated, latestUpdated }, cfg);
+    return { key: fam.key, base: fam.base, langs, members, totalUsage30, earliestCreated, latestUpdated, hasConflict, hasDeactivateConflict, hasActionedConflict, tier, tierRank, isMultiLang: members.length > 1, category: members[0]?.category || '' };
+  });
+
+  renderResults(cfg);
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderResults(cfg) {
+  const content = document.getElementById('content');
+  document.getElementById('export-btn').style.display = 'inline-block';
+
+  const byTier = t => results.filter(r => r.tier === t);
+  const conflicts = results.filter(r => r.hasConflict);
+  const filtered = getFiltered();
+
+  let html = '';
+
+  // Summary cards
+  html += `<div class="summary-grid">
+    <div class="stat-card total">
+      <div class="stat-label">Total Macro Families</div>
+      <div class="stat-value total">${results.length}</div>
+      <div class="stat-sub">${results.reduce((s,r)=>s+r.members.length,0)} individual macros</div>
+    </div>
+    <div class="stat-card deactivate">
+      <div class="stat-label">Flag — Deactivate</div>
+      <div class="stat-value deactivate">${byTier('deactivate').length}</div>
+      <div class="stat-sub">${pct(byTier('deactivate').length, results.length)}% of families</div>
+    </div>
+    <div class="stat-card review">
+      <div class="stat-label">Flag — Review</div>
+      <div class="stat-value review">${byTier('review').length}</div>
+      <div class="stat-sub">${pct(byTier('review').length, results.length)}% of families</div>
+    </div>
+    <div class="stat-card keep">
+      <div class="stat-label">Keep Active</div>
+      <div class="stat-value keep">${byTier('keep').length}</div>
+      <div class="stat-sub">${pct(byTier('keep').length, results.length)}% of families</div>
+    </div>
+  </div>`;
+
+  // Conflict banner
+  if (conflicts.length > 0) {
+    const dConf = conflicts.filter(r => r.hasDeactivateConflict).length;
+    const aConf = conflicts.filter(r => r.hasActionedConflict).length;
+    html += `<div class="conflict-banner">
+      <h3>⚠️ Status Conflicts Detected — ${conflicts.length} macro ${conflicts.length===1?'family':'families'}</h3>
+      <div class="conflict-list">
+        ${dConf ? `<strong>${dConf} ${dConf===1?'family':'families'}</strong> have inconsistent <strong>"Deactivate?"</strong> flags across language variants.<br>` : ''}
+        ${aConf ? `<strong>${aConf} ${aConf===1?'family':'families'}</strong> have inconsistent <strong>"Actioned in ZD"</strong> status across language variants.<br>` : ''}
+        Affected families are marked with a <span style="color:var(--warn)">⚠ Conflict</span> badge in the table. Review each language variant individually in Zendesk.
+      </div>
+    </div>`;
+  }
+
+  // Open questions
+  const activeTrue  = results.reduce((s,f)=>s+f.members.filter(m=>m.active).length,0);
+  const activeFalse = results.reduce((s,f)=>s+f.members.filter(m=>!m.active).length,0);
+  const deactButActive = results.reduce((s,f)=>s+f.members.filter(m=>m.deactivate&&m.active).length,0);
+  html += `<div class="notice-box">
+    <h4>📋 Open Questions</h4>
+    <ul>
+      <li><strong>"Deactivate?" column:</strong> ${deactButActive} rows have <code>Active = true</code> and <code>Deactivate? = true</code> simultaneously. Does "Deactivate?" indicate the macro has been <em>identified</em> for deactivation (pending action) or that it has already been executed? If executed, the <code>Active</code> flag appears inconsistent.</li>
+      <li><strong>"Actioned in ZD":</strong> Does this confirm the deactivation was carried out in Zendesk? If so, this may conflict with rows still showing <code>Active = true</code>. Clarifying this will determine whether those rows belong in the audit scope.</li>
+
+    </ul>
+  </div>`;
+
+  // Table
+  const maxUsage = Math.max(...results.map(r => r.totalUsage30), 1);
+  html += `<div>
+    <div class="section-title" style="margin-bottom:10px">
+      Macro Families
+      <span class="count-badge">${filtered.length} shown</span>
+    </div>
+    <div class="filters-row" style="margin-bottom:10px">
+      <button class="filter-tab ${currentFilter==='all'?'active':''}" onclick="setFilter('all')">All (${results.length})</button>
+      <button class="filter-tab ${currentFilter==='deactivate'?'active':''}" onclick="setFilter('deactivate')">🔴 Deactivate (${byTier('deactivate').length})</button>
+      <button class="filter-tab ${currentFilter==='review'?'active':''}" onclick="setFilter('review')">🟡 Review (${byTier('review').length})</button>
+      <button class="filter-tab ${currentFilter==='keep'?'active':''}" onclick="setFilter('keep')">🟢 Keep (${byTier('keep').length})</button>
+      <button class="filter-tab ${currentFilter==='conflict'?'active':''}" onclick="setFilter('conflict')">⚠️ Conflicts (${conflicts.length})</button>
+      <input class="search-box" type="text" placeholder="Search macros…" value="${searchQuery}" oninput="setSearch(this.value)">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('tier_rank')">Tier <span class="sort-arrow ${currentSort.col==='tier_rank'?'sorted':''}">${sa('tier_rank')}</span></th>
+          <th onclick="sortBy('base')">Macro Name <span class="sort-arrow ${currentSort.col==='base'?'sorted':''}">${sa('base')}</span></th>
+          <th onclick="sortBy('totalUsage30')">30d Usage <span class="sort-arrow ${currentSort.col==='totalUsage30'?'sorted':''}">${sa('totalUsage30')}</span></th>
+          <th onclick="sortBy('langs')">Languages <span class="sort-arrow ${currentSort.col==='langs'?'sorted':''}">${sa('langs')}</span></th>
+          <th onclick="sortBy('earliestCreated')">Created <span class="sort-arrow ${currentSort.col==='earliestCreated'?'sorted':''}">${sa('earliestCreated')}</span></th>
+          <th onclick="sortBy('latestUpdated')">Last Updated <span class="sort-arrow ${currentSort.col==='latestUpdated'?'sorted':''}">${sa('latestUpdated')}</span></th>
+          <th>Category</th>
+          <th>Flags</th>
+        </tr></thead>
+        <tbody>`;
+
+  paginate(filtered).forEach(fam => {
+    const pct2 = Math.min(100, (fam.totalUsage30 / maxUsage) * 100);
+    const barColor = fam.tier==='deactivate'?'var(--deactivate)':fam.tier==='review'?'var(--review)':'var(--keep)';
+    html += `<tr>
+      <td><div class="tier-pill ${fam.tier}"><div class="dot"></div>${tierLabel(fam.tier)}</div></td>
+      <td style="max-width:230px">
+        <div class="cell-title">${esc(fam.base)}</div>
+        ${fam.members.length>1?`<div class="cell-sub">${fam.members.length} variants</div>`:''}
+        ${fam.hasConflict?`<div class="conflict-flag">⚠ Conflict</div>`:''}
+      </td>
+      <td>
+        <div class="usage-bar-wrap">
+          <div class="cell-mono">${fam.totalUsage30}</div>
+          <div class="usage-bar-bg"><div class="usage-bar-fill" style="width:${pct2}%;background:${barColor}"></div></div>
+        </div>
+        ${fam.isMultiLang?`<div class="cell-sub">${fam.members.map(m=>`${m.lang}:${m.usage30}`).join(' · ')}</div>`:''}
+      </td>
+      <td><div class="cell-mono" style="font-size:11px">${fam.langs.length?fam.langs.join(', '):'—'}</div></td>
+      <td><div class="cell-mono">${fmtDate(fam.earliestCreated)}</div></td>
+      <td><div class="cell-mono">${fmtDate(fam.latestUpdated)}</div></td>
+      <td><div class="cell-sub">${esc(fam.category)}</div></td>
+      <td style="max-width:160px">
+        ${fam.hasDeactivateConflict?`<div class="conflict-flag">⚠ Deactivate? mismatch</div>`:''}
+        ${fam.hasActionedConflict?`<div class="conflict-flag">⚠ Actioned mismatch</div>`:''}
+        ${fam.members[0]?.notes?`<div class="cell-sub">${esc(fam.members[0].notes)}</div>`:''}
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>${renderPagination(filtered.length)}</div></div>`;
+  content.innerHTML = html;
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return '';
+  let h = `<div class="pagination"><span class="page-info">${(currentPage-1)*PAGE_SIZE+1}–${Math.min(currentPage*PAGE_SIZE,total)} of ${total}</span>`;
+  h += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let i=1;i<=totalPages;i++) {
+    if (i===1||i===totalPages||Math.abs(i-currentPage)<=2) h+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if (Math.abs(i-currentPage)===3) h+=`<span style="color:var(--muted2);font-size:12px;padding:0 2px">…</span>`;
+  }
+  h += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button></div>`;
+  return h;
+}
+
+function getFiltered() {
+  let f = results;
+  if (currentFilter==='conflict') f=f.filter(r=>r.hasConflict);
+  else if (currentFilter!=='all') f=f.filter(r=>r.tier===currentFilter);
+  if (searchQuery) {
+    const q=searchQuery.toLowerCase();
+    f=f.filter(r=>r.base.toLowerCase().includes(q)||r.category.toLowerCase().includes(q)||r.langs.some(l=>l.toLowerCase().includes(q)));
+  }
+  return [...f].sort((a,b)=>{
+    let va=a[currentSort.col],vb=b[currentSort.col];
+    if(currentSort.col==='langs'){va=a.langs.length;vb=b.langs.length;}
+    if(va instanceof Date&&vb instanceof Date){va=va.getTime();vb=vb.getTime();}
+    if(va==null)va=currentSort.dir==='asc'?Infinity:-Infinity;
+    if(vb==null)vb=currentSort.dir==='asc'?Infinity:-Infinity;
+    if(typeof va==='string')return currentSort.dir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+    return currentSort.dir==='asc'?va-vb:vb-va;
+  });
+}
+
+function paginate(f){return f.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);}
+function setFilter(f){currentFilter=f;currentPage=1;renderResults();}
+function setSearch(q){searchQuery=q;currentPage=1;renderResults();}
+function goPage(p){currentPage=p;renderResults();}
+function sortBy(col){
+  if(currentSort.col===col)currentSort.dir=currentSort.dir==='asc'?'desc':'asc';
+  else{currentSort.col=col;currentSort.dir='asc';}
+  currentPage=1;renderResults();
+}
+function sa(col){if(currentSort.col!==col)return'↕';return currentSort.dir==='asc'?'↑':'↓';}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportCSV(){
+  const f=getFiltered();
+  const rows=[['Tier','Base Title','Languages','Total 30d Usage','Per-Language Usage','Created At','Last Updated At','Category','Has Conflict','Deactivate? Conflict','Actioned Conflict','Macro IDs']];
+  f.forEach(fam=>rows.push([fam.tier,fam.base,fam.langs.join('; '),fam.totalUsage30,fam.members.map(m=>`${m.lang}:${m.usage30}`).join('; '),fmtDate(fam.earliestCreated),fmtDate(fam.latestUpdated),fam.category,fam.hasConflict,fam.hasDeactivateConflict,fam.hasActionedConflict,fam.members.map(m=>m.id).join('; ')]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`zendesk-macro-audit-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmtDate(d){if(!d||isNaN(d))return'—';return d.toISOString().slice(0,10);}
+function pct(a,b){return b?Math.round(a/b*100):0;}
+function tierLabel(t){return t==='deactivate'?'Deactivate':t==='review'?'Review':'Keep';}
+</script>
+</body>
+</html>
