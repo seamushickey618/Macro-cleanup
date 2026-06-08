@@ -223,11 +223,7 @@
   .lb-pill.d { background: var(--deactivate-bg); color: var(--deactivate); }
   .lb-pill.r { background: var(--review-bg); color: var(--review); }
   .lb-pill.k { background: var(--keep-bg); color: var(--keep); }
-  .lb-nav   { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
-  .lb-nav button { padding: 3px 9px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; }
-  .lb-nav button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .lb-nav button:disabled { opacity: .3; cursor: not-allowed; }
-  .lb-close { padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); font-size: 12px; cursor: pointer; flex-shrink: 0; transition: all .15s; margin-left: 4px; }
+.lb-close { padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); font-size: 12px; cursor: pointer; flex-shrink: 0; transition: all .15s; margin-left: 4px; }
   .lb-close:hover { border-color: var(--deactivate); color: var(--deactivate); }
 
   /* ── HISTORY SECTION ── */
@@ -303,6 +299,8 @@
   .hbtn:hover { border-color: var(--accent); color: var(--accent); }
   .hbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .hbtn.primary:hover { opacity: .85; }
+  .hbtn.delete { color: var(--muted2); }
+  .hbtn.delete:hover { border-color: var(--deactivate); color: var(--deactivate); background: var(--deactivate-bg); }
   .history-empty { font-size: 12px; color: var(--muted2); padding: 10px 0; }
 </style>
 </head>
@@ -334,10 +332,7 @@
     <div class="lb-meta" id="lb-meta"></div>
   </div>
   <div class="lb-pills" id="lb-pills"></div>
-  <div class="lb-nav">
-    <button id="lb-prev" onclick="navAnalysis(-1)" title="Previous analysis">‹ Prev</button>
-    <button id="lb-next" onclick="navAnalysis(1)"  title="Next analysis">Next ›</button>
-  </div>
+  <button class="hbtn" style="margin-left:auto;flex-shrink:0" onclick="showTab('history')">View History</button>
   <button class="lb-close" onclick="clearLoadedBar()" title="Close">✕</button>
 </div>
 
@@ -496,16 +491,6 @@
       <button id="run-btn" disabled onclick="runAnalysis()">Run Analysis</button>
     </div>
 
-    <div class="sidebar-section" style="flex:1;min-height:0;overflow-y:auto">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div class="section-label" style="margin-bottom:0">Saved Analyses</div>
-        <span id="ana-refresh-dot" style="width:6px;height:6px;border-radius:50%;background:var(--keep);display:none"></span>
-      </div>
-      <div class="analyses-list" id="analyses-list">
-        <div class="ana-empty">Loading…</div>
-      </div>
-    </div>
-
   </aside>
 
   <div id="tab-analysis-content" class="content" style="flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:22px;">
@@ -572,11 +557,7 @@ let currentImportName = null;
 let pendingFile = null;
 let lastCfg = null;
 
-// load on page ready, poll sidebar analyses every 30s
-window.addEventListener('DOMContentLoaded', () => {
-  loadSidebarAnalyses();
-  setInterval(loadSidebarAnalyses, 30000);
-});
+window.addEventListener('DOMContentLoaded', () => {});
 
 // ── TOAST ────────────────────────────────────────────────────────
 function toast(msg, type='success') {
@@ -980,7 +961,6 @@ async function confirmSave() {
     });
     if (error) throw error;
     toast(`"${name}" saved`);
-    loadSidebarAnalyses();
     if (_saveWithExport) triggerCsvDownload(csvData, name);
   } catch(e) {
     console.error(e);
@@ -1022,49 +1002,6 @@ function triggerCsvDownload(csv, name) {
   a.click();
 }
 
-// ── SIDEBAR ANALYSES ──────────────────────────────────────────────
-async function loadSidebarAnalyses() {
-  const { data, error } = await sb.from('exports')
-    .select('id,name,created_at,summary,saved_by,import_name')
-    .eq('type','analysis')
-    .order('created_at',{ascending:false})
-    .limit(40);
-
-  const el = document.getElementById('analyses-list');
-  if (!el) return;
-  if (error || !data?.length) {
-    el.innerHTML = `<div class="ana-empty">${error ? 'Could not load.' : 'No saved analyses yet.'}</div>`;
-    return;
-  }
-
-  // Flash dot if list changed
-  const newIds = data.map(d=>d.id).join();
-  if (el._lastIds && el._lastIds !== newIds) {
-    const dot = document.getElementById('ana-refresh-dot');
-    if (dot) { dot.style.display='block'; setTimeout(()=>dot.style.display='none',2500); }
-  }
-  el._lastIds = newIds;
-  if (_loadedAnalysisId) setTimeout(updateNavButtons, 0);
-
-  const currentActive = document.querySelector('.ana-item.active-card')?.dataset?.id;
-  el.innerHTML = data.map(a => {
-    const s = a.summary||{};
-    const isActive = a.id === currentActive;
-    return `<div class="ana-item${isActive?' active-card':''}" data-id="${a.id}" onclick="reloadAnalysis('${a.id}')">
-      <div class="ana-item-name">${esc(a.name)}</div>
-      <div class="ana-item-meta">
-        <span class="ana-saved-by">👤 ${esc(a.saved_by||'Anonymous')}</span>
-        <span>${fmtDateShort(a.created_at)}</span>
-      </div>
-      <div class="ana-item-counts">
-        ${s.deactivate!=null?`<span class="ana-pill d">🔴 ${s.deactivate}</span>`:''}
-        ${s.review    !=null?`<span class="ana-pill r">🟡 ${s.review}</span>`:''}
-        ${s.keep      !=null?`<span class="ana-pill k">🟢 ${s.keep}</span>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
 // ── HISTORY PAGE ──────────────────────────────────────────────────
 async function loadHistoryPage() {
   const el = document.getElementById('history-page-inner');
@@ -1085,20 +1022,21 @@ async function loadHistoryPage() {
   }
 
   const importsHtml = imports.length ? imports.map(i => `
-    <div class="hcard">
+    <div class="hcard" id="icard-${i.id}">
       <div class="hcard-icon">📥</div>
       <div class="hcard-body">
         <div class="hcard-name">${esc(i.name)}</div>
         <div class="hcard-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)}</div>
         <div class="hcard-actions">
           <button class="hbtn primary" onclick="redownloadImport('${i.id}','${esc(i.name)}')">↓ Download CSV</button>
+          <button class="hbtn delete" onclick="deleteImport('${i.id}')">🗑 Delete</button>
         </div>
       </div>
     </div>`).join('') : `<div class="history-empty">No imports yet.</div>`;
 
   const analysesHtml = analyses.length ? analyses.map(a => {
     const s = a.summary||{};
-    const critLine = criteriaOneLiner(a.criteria);
+    const critBlock = criteriaBlock(a.criteria);
     const hasCsv = !!(a.results_csv);
     const csvArg = JSON.stringify(a.results_csv||'');
     const nameArg = JSON.stringify(a.name||'export');
@@ -1109,10 +1047,11 @@ async function loadHistoryPage() {
         <div class="hcard-name">${esc(a.name)}</div>
         <div class="hcard-meta">by ${esc(a.saved_by||'Anonymous')} · ${fmtDateShort(a.created_at)}${a.import_name?' · '+esc(a.import_name):''}</div>
         ${s.deactivate!=null?`<div class="hcard-counts">${countBadges(s)}</div>`:''}
-        ${critLine?`<div class="hcard-criteria">${critLine}</div>`:''}
+        ${critBlock?`<div class="hcard-criteria">${critBlock}</div>`:''}
         <div class="hcard-actions">
           <button class="hbtn primary" onclick="reloadAnalysis('${a.id}');showTab('analysis')">⟳ Reload</button>
           ${hasCsv?`<button class="hbtn" onclick="triggerCsvDownload(${csvArg},${nameArg})">↓ Export CSV</button>`:''}
+          <button class="hbtn delete" onclick="deleteAnalysis('${a.id}')">🗑 Delete</button>
         </div>
       </div>
     </div>`;
@@ -1130,20 +1069,31 @@ async function loadHistoryPage() {
   </div>`;
 }
 
-function criteriaOneLiner(c) {
+function criteriaBlock(c) {
   if (!c) return '';
   const d = c.deactivate||{}, r = c.review||{};
-  const fmt = crit => crit ? `${crit.op==='lte'?'≤':'<'} ${crit.value}` : null;
-  const join = (parts, conn) => parts.filter(Boolean).join(` ${(conn||'AND').toUpperCase()} `);
-  const dParts = [d.usage?`usage ${fmt(d.usage)}`:null, d.created?`created ${fmt(d.created)}`:null, d.updated?`updated ${fmt(d.updated)}`:null];
-  const rParts = [r.usage?`usage ${fmt(r.usage)}`:null, r.created?`created ${fmt(r.created)}`:null, r.updated?`updated ${fmt(r.updated)}`:null];
-  const dStr = join(dParts, d.connector1);
-  const rStr = join(rParts, r.connector1);
-  const activeLabel = c.activeFilter==='true'?' · active only':c.activeFilter==='false'?' · inactive only':'';
-  const parts = [];
-  if (dStr) parts.push(`<span class="tier-tag d">DEACTIVATE</span>${esc(dStr)}`);
-  if (rStr) parts.push(`<span class="tier-tag r">REVIEW</span>${esc(rStr)}`);
-  return parts.join('<br>') + (activeLabel ? `<br><span style="color:var(--muted2)">${esc(activeLabel.slice(3))}</span>` : '');
+  const fmtVal = crit => crit ? `<strong>${crit.op==='lte'?'≤':'<'} ${crit.value}</strong>` : null;
+  const conn = s => `<span style="color:var(--muted2);font-size:10px;margin:0 2px">${(s||'AND').toUpperCase()}</span>`;
+
+  function buildRow(label, val, c1, next1, c2, next2) {
+    if (!val && !next1 && !next2) return '';
+    const parts = [];
+    if (val)   parts.push(`<span>${label}: ${fmtVal(val)}</span>`);
+    if (next1) { parts.push(conn(c1)); parts.push(`<span>created ${fmtVal(next1)}</span>`); }
+    if (next2) { parts.push(conn(c2)); parts.push(`<span>updated ${fmtVal(next2)}</span>`); }
+    return parts.join(' ');
+  }
+
+  const dRow = buildRow('30d usage', d.usage, d.connector1, d.created, d.connector2, d.updated);
+  const rRow = buildRow('30d usage', r.usage, r.connector1, r.created, r.connector2, r.updated);
+  const scopeLabel = c.activeFilter==='true'?'Active macros only':c.activeFilter==='false'?'Inactive macros only':'All macros';
+
+  let html = `<table style="border-collapse:collapse;width:100%;font-size:11px;line-height:1.9">`;
+  if (dRow) html += `<tr><td style="width:80px;padding-right:8px;color:var(--deactivate);font-weight:700;white-space:nowrap;vertical-align:top">Deactivate</td><td>${dRow}</td></tr>`;
+  if (rRow) html += `<tr><td style="width:80px;padding-right:8px;color:var(--review);font-weight:700;white-space:nowrap;vertical-align:top">Review</td><td>${rRow}</td></tr>`;
+  html += `<tr><td style="color:var(--muted2);vertical-align:top">Scope</td><td><span style="color:var(--muted)">${scopeLabel}</span></td></tr>`;
+  html += `</table>`;
+  return html;
 }
 
 let _loadedAnalysisId = null;
@@ -1199,7 +1149,6 @@ function showLoadedBar(rec) {
     s.keep       != null ? `<span class="lb-pill k">🟢 ${s.keep}</span>`       : '',
   ].join('');
   bar.classList.add('visible');
-  updateNavButtons();
 }
 
 function clearLoadedBar() {
@@ -1208,19 +1157,6 @@ function clearLoadedBar() {
   document.querySelectorAll('.ana-item, .analysis-card').forEach(c => c.classList.remove('active-card'));
 }
 
-function updateNavButtons() {
-  const items = [...document.querySelectorAll('.ana-item[data-id]')];
-  const idx = items.findIndex(el => el.dataset.id === _loadedAnalysisId);
-  document.getElementById('lb-prev').disabled = idx <= 0;
-  document.getElementById('lb-next').disabled = idx < 0 || idx >= items.length - 1;
-}
-
-function navAnalysis(dir) {
-  const items = [...document.querySelectorAll('.ana-item[data-id]')];
-  const idx = items.findIndex(el => el.dataset.id === _loadedAnalysisId);
-  const next = items[idx + dir];
-  if (next) reloadAnalysis(next.dataset.id);
-}
 
 function restoreCriteria(c) {
   const d = c.deactivate || {}, r = c.review || {};
@@ -1250,6 +1186,23 @@ function restoreCriteria(c) {
   if (r.connector2) setConnector('r-c2', r.connector2);
 
   if (c.activeFilter) setActiveFilter(c.activeFilter);
+}
+
+async function deleteImport(id) {
+  if (!confirm('Delete this import? This cannot be undone.')) return;
+  const { error } = await sb.from('imports').delete().eq('id', id);
+  if (error) { toast('Delete failed', 'error'); return; }
+  document.getElementById(`icard-${id}`)?.remove();
+  toast('Import deleted');
+}
+
+async function deleteAnalysis(id) {
+  if (!confirm('Delete this saved analysis? This cannot be undone.')) return;
+  const { error } = await sb.from('exports').delete().eq('id', id);
+  if (error) { toast('Delete failed', 'error'); return; }
+  document.getElementById(`acard-${id}`)?.remove();
+  if (_loadedAnalysisId === id) clearLoadedBar();
+  toast('Analysis deleted');
 }
 
 async function redownloadImport(id, name) {
