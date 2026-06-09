@@ -7,281 +7,304 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  /* GATE */
-  #gate { position:fixed;inset:0;background:#0e0f14;display:flex;align-items:center;justify-content:center;z-index:9999; }
-  .gate-box { background:#16181f;border:1px solid #2a2d3a;border-radius:12px;padding:36px 32px;width:320px;text-align:center; }
-  .gate-mark { width:40px;height:40px;background:#5b6af0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;font-family:'DM Mono',monospace;margin:0 auto 16px; }
-  .gate-title { font-size:16px;font-weight:600;color:#e8eaf2;margin-bottom:4px; }
-  .gate-sub { font-size:12px;color:#7b7f96;margin-bottom:22px; }
-  .gate-input { width:100%;background:#0e0f14;border:1px solid #363a4a;color:#e8eaf2;border-radius:8px;padding:9px 12px;font-family:'DM Mono',monospace;font-size:13px;text-align:center;letter-spacing:.05em;margin-bottom:12px;transition:border-color .15s; }
-  .gate-input:focus { outline:none;border-color:#5b6af0; }
-  .gate-btn { width:100%;padding:9px;background:#5b6af0;color:#fff;border:none;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;transition:opacity .15s; }
-  .gate-btn:hover { opacity:.88; }
-  .gate-error { font-size:11px;color:#e05c5c;margin-top:8px;min-height:16px; }
+/* ── GATE ── */
+#gate{position:fixed;inset:0;background:#0e0f14;display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gate-box{background:#16181f;border:1px solid #2a2d3a;border-radius:12px;padding:36px 32px;width:340px;text-align:center;}
+.gate-mark{width:40px;height:40px;background:#5b6af0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;font-family:'DM Mono',monospace;margin:0 auto 16px;}
+.gate-title{font-size:16px;font-weight:600;color:#e8eaf2;margin-bottom:4px;}
+.gate-sub{font-size:12px;color:#7b7f96;margin-bottom:22px;}
+.gate-input{width:100%;background:#0e0f14;border:1px solid #363a4a;color:#e8eaf2;border-radius:8px;padding:9px 12px;font-family:'DM Mono',monospace;font-size:13px;text-align:center;letter-spacing:.05em;margin-bottom:12px;transition:border-color .15s;}
+.gate-input:focus{outline:none;border-color:#5b6af0;}
+.gate-name-input{width:100%;background:#0e0f14;border:1px solid #363a4a;color:#e8eaf2;border-radius:8px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;text-align:center;margin-bottom:12px;transition:border-color .15s;}
+.gate-name-input:focus{outline:none;border-color:#5b6af0;}
+.gate-btn{width:100%;padding:9px;background:#5b6af0;color:#fff;border:none;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.gate-btn:hover{opacity:.88;}
+.gate-error{font-size:11px;color:#e05c5c;margin-top:8px;min-height:16px;}
+.gate-step{display:none;}
+.gate-step.active{display:block;}
 
-  :root {
-    --bg:#0e0f14;--surface:#16181f;--surface2:#1e2029;--border:#2a2d3a;--border2:#363a4a;
-    --text:#e8eaf2;--muted:#7b7f96;--muted2:#555870;--accent:#5b6af0;--accent-glow:rgba(91,106,240,0.18);
-    --deactivate:#e05c5c;--deactivate-bg:rgba(224,92,92,0.1);--review:#e8a23a;--review-bg:rgba(232,162,58,0.1);
-    --keep:#3dbf82;--keep-bg:rgba(61,191,130,0.1);--warn:#c07ef0;--warn-bg:rgba(192,126,240,0.1);--r:8px;
-  }
-  * { box-sizing:border-box;margin:0;padding:0; }
-  body { font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5; }
+/* ── ROOT ── */
+:root{
+  --bg:#0e0f14;--surface:#16181f;--surface2:#1e2029;--border:#2a2d3a;--border2:#363a4a;
+  --text:#e8eaf2;--muted:#7b7f96;--muted2:#555870;--accent:#5b6af0;--accent-glow:rgba(91,106,240,0.18);
+  --deactivate:#e05c5c;--deactivate-bg:rgba(224,92,92,0.1);--review:#e8a23a;--review-bg:rgba(232,162,58,0.1);
+  --keep:#3dbf82;--keep-bg:rgba(61,191,130,0.1);--warn:#c07ef0;--warn-bg:rgba(192,126,240,0.1);--r:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;}
 
-  /* HEADER */
-  header { border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:100; }
-  .logo { display:flex;align-items:center;gap:10px; }
-  .logo-mark { width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;font-family:'DM Mono',monospace; }
-  .logo-text { font-weight:600;font-size:15px;letter-spacing:-0.01em; }
-  .logo-sub { font-size:11px;color:var(--muted);font-weight:400; }
-  .header-nav { display:flex;align-items:center;gap:4px; }
-  .nav-tab { padding:6px 14px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s; }
-  .nav-tab:hover { color:var(--text); }
-  .nav-tab.active { background:var(--surface2);border-color:var(--border2);color:var(--text); }
-  .header-right { display:flex;align-items:center;gap:8px; }
-  .hdr-btn { display:none;padding:7px 14px;border:1px solid var(--border2);background:transparent;color:var(--muted);border-radius:var(--r);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s; }
-  .hdr-btn:hover { border-color:var(--accent);color:var(--accent); }
-  .hdr-btn.primary { background:var(--accent);border-color:var(--accent);color:#fff; }
-  .hdr-btn.primary:hover { opacity:.88; }
+/* ── HEADER ── */
+header{border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;font-family:'DM Mono',monospace;}
+.logo-text{font-weight:600;font-size:15px;letter-spacing:-0.01em;}
+.logo-sub{font-size:11px;color:var(--muted);font-weight:400;}
+.header-center{display:flex;align-items:center;gap:4px;}
+.nav-tab{padding:6px 14px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{background:var(--surface2);border-color:var(--border2);color:var(--text);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.user-chip{display:flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 8px;font-size:12px;color:var(--muted);cursor:pointer;transition:border-color .15s;}
+.user-chip:hover{border-color:var(--accent);}
+.user-avatar{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;}
+.hdr-btn{display:none;padding:7px 14px;border:1px solid var(--border2);background:transparent;color:var(--muted);border-radius:var(--r);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;}
+.hdr-btn:hover{border-color:var(--accent);color:var(--accent);}
+.hdr-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.hdr-btn.primary:hover{opacity:.88;}
 
-  /* PAGES */
-  .page { display:none; }
-  .page.active { display:flex; }
+/* ── PAGES ── */
+.page{display:none;}
+.page.active{display:flex;}
 
-  /* ── ANALYSIS PAGE ── */
-  #page-analysis { height:calc(100vh - 55px);overflow:hidden; }
-  .sidebar { width:310px;min-width:310px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;display:flex;flex-direction:column; }
-  .sidebar-section { padding:16px 18px;border-bottom:1px solid var(--border); }
-  .sidebar-section:last-child { border-bottom:none; }
-  .section-label { font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px; }
-  .upload-zone { border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px 14px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative; }
-  .upload-zone:hover,.upload-zone.dragging { border-color:var(--accent);background:var(--accent-glow); }
-  .upload-zone input { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%; }
-  .upload-icon { font-size:20px;margin-bottom:5px; }
-  .upload-text { font-size:12px;color:var(--muted); }
-  .upload-text strong { color:var(--text);font-weight:500; }
-  #file-name { font-size:11px;color:var(--accent);margin-top:7px;font-family:'DM Mono',monospace;word-break:break-all; }
-  .active-filter-row { display:flex;align-items:center;justify-content:space-between;margin-top:12px; }
-  .active-filter-row label { font-size:12px;color:var(--muted);margin:0; }
-  .seg-ctrl { display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:6px;overflow:hidden; }
-  .seg-ctrl button { padding:4px 12px;border:none;background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;white-space:nowrap; }
-  .seg-ctrl button.active { background:var(--accent);color:#fff; }
-  .criterion-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:4px; }
-  .criterion-header label { margin:0; }
-  .na-toggle { display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none; }
-  .na-toggle input[type="checkbox"] { display:none; }
-  .na-pill { font-size:10px;font-weight:600;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:20px;border:1px solid var(--border2);color:var(--muted2);background:transparent;transition:all .15s;cursor:pointer; }
-  .na-toggle input:checked + .na-pill { background:var(--surface2);color:var(--muted);border-color:var(--muted2);text-decoration:line-through; }
-  .criterion-body { transition:opacity .2s; }
-  .criterion-body.disabled { opacity:.25;pointer-events:none; }
-  .criterion { margin-bottom:11px; }
-  .criterion:last-child { margin-bottom:0; }
-  label { font-size:12px;color:var(--muted);display:block;margin-bottom:4px; }
-  .input-row { display:flex;gap:6px;align-items:center; }
-  input[type="number"],input[type="date"] { background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 9px;font-family:'DM Mono',monospace;font-size:12px;width:100%;transition:border-color .15s;-webkit-appearance:none; }
-  input[type="number"]:focus,input[type="date"]:focus { outline:none;border-color:var(--accent); }
-  input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(.5); }
-  .op-badge { font-size:10px;font-weight:600;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);white-space:nowrap;flex-shrink:0; }
-  .connector-row { display:flex;align-items:center;gap:8px;margin:10px 0; }
-  .connector-line { flex:1;height:1px;background:var(--border); }
-  .connector-toggle { display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0; }
-  .connector-toggle button { padding:3px 10px;border:none;background:transparent;color:var(--muted2);font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;letter-spacing:.05em; }
-  .connector-toggle button.active-or { background:var(--review);color:#111; }
-  .connector-toggle button.active-and { background:var(--deactivate);color:#fff; }
-  .tier-section-hd { display:flex;align-items:center;gap:8px;margin-bottom:12px; }
-  .tier-dot-lg { width:9px;height:9px;border-radius:50%;flex-shrink:0; }
-  .tier-dot-lg.deactivate { background:var(--deactivate); }
-  .tier-dot-lg.review { background:var(--review); }
-  .tier-section-hd-text { font-size:12px;font-weight:600; }
-  .tier-section-hd-text.deactivate { color:var(--deactivate); }
-  .tier-section-hd-text.review { color:var(--review); }
-  .tier-logic-note { font-size:10.5px;color:var(--muted2);margin-top:-8px;margin-bottom:12px;line-height:1.5; }
-  #run-btn { width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:opacity .15s,transform .1s; }
-  #run-btn:disabled { opacity:.35;cursor:not-allowed; }
-  #run-btn:not(:disabled):hover { opacity:.88; }
-  #run-btn:not(:disabled):active { transform:scale(.98); }
-  .content { flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:22px; }
-  .empty-state { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted2); }
-  .empty-icon { font-size:38px;opacity:.4; }
-  .empty-title { font-size:16px;font-weight:500;color:var(--muted); }
-  .empty-sub { font-size:13px;text-align:center;max-width:320px; }
-  .summary-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px; }
-  .stat-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden; }
-  .stat-card::before { content:'';position:absolute;top:0;left:0;right:0;height:2px; }
-  .stat-card.deactivate::before { background:var(--deactivate); }
-  .stat-card.review::before { background:var(--review); }
-  .stat-card.keep::before { background:var(--keep); }
-  .stat-card.total::before { background:var(--accent); }
-  .stat-label { font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase; }
-  .stat-value { font-size:26px;font-weight:300;font-family:'DM Mono',monospace;letter-spacing:-0.02em; }
-  .stat-value.deactivate { color:var(--deactivate); }
-  .stat-value.review { color:var(--review); }
-  .stat-value.keep { color:var(--keep); }
-  .stat-value.total { color:var(--accent); }
-  .stat-sub { font-size:11px;color:var(--muted2);margin-top:3px; }
-  .section-title { font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;display:flex;align-items:center;gap:8px; }
-  .count-badge { background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1px 9px;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none;font-family:'DM Mono',monospace; }
-  .filters-row { display:flex;gap:7px;align-items:center;flex-wrap:wrap; }
-  .filter-tab { padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s; }
-  .filter-tab:hover { border-color:var(--muted);color:var(--text); }
-  .filter-tab.active { border-color:var(--accent);color:var(--accent);background:var(--accent-glow); }
-  .search-box { margin-left:auto;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;color:var(--text);font-family:inherit;font-size:12px;width:190px; }
-  .search-box:focus { outline:none;border-color:var(--accent); }
-  .search-box::placeholder { color:var(--muted2); }
-  .table-wrap { background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden; }
-  table { width:100%;border-collapse:collapse;font-size:12.5px; }
-  thead { position:sticky;top:0;z-index:2; }
-  th { background:var(--surface2);padding:9px 13px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none; }
-  th:hover { color:var(--text); }
-  th .sort-arrow { opacity:.3;margin-left:3px;font-size:9px; }
-  th.sorted .sort-arrow { opacity:1;color:var(--accent); }
-  td { padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:top; }
-  tr:last-child td { border-bottom:none; }
-  tr:hover td { background:var(--surface2); }
-  .cell-title { font-weight:500;color:var(--text);margin-bottom:2px;word-break:break-word; }
-  .cell-sub { font-size:11px;color:var(--muted); }
-  .cell-mono { font-family:'DM Mono',monospace;font-size:11.5px; }
-  .tier-pill { display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap; }
-  .tier-pill.deactivate { background:var(--deactivate-bg);color:var(--deactivate); }
-  .tier-pill.review { background:var(--review-bg);color:var(--review); }
-  .tier-pill.keep { background:var(--keep-bg);color:var(--keep); }
-  .tier-pill .dot { width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0; }
-  .usage-bar-wrap { display:flex;align-items:center;gap:8px; }
-  .usage-bar-bg { flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:40px; }
-  .usage-bar-fill { height:100%;border-radius:2px; }
-  .pagination { display:flex;align-items:center;justify-content:flex-end;gap:4px;padding:10px 13px;border-top:1px solid var(--border);background:var(--surface2); }
-  .page-btn { padding:4px 9px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s; }
-  .page-btn:hover { border-color:var(--accent);color:var(--accent); }
-  .page-btn.active { background:var(--accent);border-color:var(--accent);color:#fff; }
-  .page-btn:disabled { opacity:.3;cursor:not-allowed; }
-  .page-info { font-size:11px;color:var(--muted);margin:0 8px;font-family:'DM Mono',monospace; }
+/* ── ANALYSIS ── */
+#page-analysis{height:calc(100vh - 53px);overflow:hidden;}
+.sidebar{width:310px;min-width:310px;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;display:flex;flex-direction:column;}
+.sidebar-section{padding:16px 18px;border-bottom:1px solid var(--border);}
+.sidebar-section:last-child{border-bottom:none;}
+.section-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--r);padding:18px 14px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;}
+.upload-zone:hover,.upload-zone.dragging{border-color:var(--accent);background:var(--accent-glow);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+.upload-icon{font-size:20px;margin-bottom:5px;}
+.upload-text{font-size:12px;color:var(--muted);}
+.upload-text strong{color:var(--text);font-weight:500;}
+#file-name{font-size:11px;color:var(--accent);margin-top:7px;font-family:'DM Mono',monospace;word-break:break-all;}
+.active-filter-row{display:flex;align-items:center;justify-content:space-between;margin-top:12px;}
+.active-filter-row label{font-size:12px;color:var(--muted);margin:0;}
+.seg-ctrl{display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:6px;overflow:hidden;}
+.seg-ctrl button{padding:4px 12px;border:none;background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.seg-ctrl button.active{background:var(--accent);color:#fff;}
+.criterion-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.criterion-header label{margin:0;}
+.na-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
+.na-toggle input[type="checkbox"]{display:none;}
+.na-pill{font-size:10px;font-weight:600;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:20px;border:1px solid var(--border2);color:var(--muted2);background:transparent;transition:all .15s;cursor:pointer;}
+.na-toggle input:checked+.na-pill{background:var(--surface2);color:var(--muted);border-color:var(--muted2);text-decoration:line-through;}
+.criterion-body{transition:opacity .2s;}
+.criterion-body.disabled{opacity:.25;pointer-events:none;}
+.criterion{margin-bottom:11px;}
+.criterion:last-child{margin-bottom:0;}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+.input-row{display:flex;gap:6px;align-items:center;}
+input[type="number"],input[type="date"]{background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 9px;font-family:'DM Mono',monospace;font-size:12px;width:100%;transition:border-color .15s;-webkit-appearance:none;}
+input[type="number"]:focus,input[type="date"]:focus{outline:none;border-color:var(--accent);}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.5);}
+.op-badge{font-size:10px;font-weight:600;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+.connector-row{display:flex;align-items:center;gap:8px;margin:10px 0;}
+.connector-line{flex:1;height:1px;background:var(--border);}
+.connector-toggle{display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:20px;overflow:hidden;flex-shrink:0;}
+.connector-toggle button{padding:3px 10px;border:none;background:transparent;color:var(--muted2);font-size:10px;font-weight:700;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;letter-spacing:.05em;}
+.connector-toggle button.active-or{background:var(--review);color:#111;}
+.connector-toggle button.active-and{background:var(--deactivate);color:#fff;}
+.tier-section-hd{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.tier-dot-lg{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.tier-dot-lg.deactivate{background:var(--deactivate);}
+.tier-dot-lg.review{background:var(--review);}
+.tier-section-hd-text{font-size:12px;font-weight:600;}
+.tier-section-hd-text.deactivate{color:var(--deactivate);}
+.tier-section-hd-text.review{color:var(--review);}
+.tier-logic-note{font-size:10.5px;color:var(--muted2);margin-top:-8px;margin-bottom:12px;line-height:1.5;}
+#run-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:opacity .15s,transform .1s;}
+#run-btn:disabled{opacity:.35;cursor:not-allowed;}
+#run-btn:not(:disabled):hover{opacity:.88;}
+#run-btn:not(:disabled):active{transform:scale(.98);}
+.content{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:22px;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted2);}
+.empty-icon{font-size:38px;opacity:.4;}
+.empty-title{font-size:16px;font-weight:500;color:var(--muted);}
+.empty-sub{font-size:13px;text-align:center;max-width:320px;}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.deactivate::before{background:var(--deactivate);}
+.stat-card.review::before{background:var(--review);}
+.stat-card.keep::before{background:var(--keep);}
+.stat-card.total::before{background:var(--accent);}
+.stat-label{font-size:10px;color:var(--muted);margin-bottom:5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+.stat-value{font-size:26px;font-weight:300;font-family:'DM Mono',monospace;letter-spacing:-0.02em;}
+.stat-value.deactivate{color:var(--deactivate);}
+.stat-value.review{color:var(--review);}
+.stat-value.keep{color:var(--keep);}
+.stat-value.total{color:var(--accent);}
+.stat-sub{font-size:11px;color:var(--muted2);margin-top:3px;}
+.section-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;display:flex;align-items:center;gap:8px;}
+.count-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1px 9px;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none;font-family:'DM Mono',monospace;}
+.filters-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.filter-tab{padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer;transition:all .15s;}
+.filter-tab:hover{border-color:var(--muted);color:var(--text);}
+.filter-tab.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.search-box{margin-left:auto;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;color:var(--text);font-family:inherit;font-size:12px;width:190px;}
+.search-box:focus{outline:none;border-color:var(--accent);}
+.search-box::placeholder{color:var(--muted2);}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead{position:sticky;top:0;z-index:2;}
+th{background:var(--surface2);padding:9px 13px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+th:hover{color:var(--text);}
+th .sort-arrow{opacity:.3;margin-left:3px;font-size:9px;}
+td{padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.cell-title{font-weight:500;color:var(--text);margin-bottom:2px;word-break:break-word;}
+.cell-sub{font-size:11px;color:var(--muted);}
+.cell-mono{font-family:'DM Mono',monospace;font-size:11.5px;}
+.tier-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.tier-pill.deactivate{background:var(--deactivate-bg);color:var(--deactivate);}
+.tier-pill.review{background:var(--review-bg);color:var(--review);}
+.tier-pill.keep{background:var(--keep-bg);color:var(--keep);}
+.tier-pill .dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.usage-bar-wrap{display:flex;align-items:center;gap:8px;}
+.usage-bar-bg{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden;min-width:40px;}
+.usage-bar-fill{height:100%;border-radius:2px;}
+.pagination{display:flex;align-items:center;justify-content:flex-end;gap:4px;padding:10px 13px;border-top:1px solid var(--border);background:var(--surface2);}
+.page-btn{padding:4px 9px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s;}
+.page-btn:hover{border-color:var(--accent);color:var(--accent);}
+.page-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.page-btn:disabled{opacity:.3;cursor:not-allowed;}
+.page-info{font-size:11px;color:var(--muted);margin:0 8px;font-family:'DM Mono',monospace;}
 
-  /* ── HISTORY PAGE ── */
-  #page-history { flex-direction:column;min-height:calc(100vh - 55px); }
-  .history-content { flex:1;padding:28px 36px;display:flex;flex-direction:column;gap:20px; }
-  .history-header-row { display:flex;align-items:center;justify-content:space-between; }
-  .history-title { font-size:18px;font-weight:600;letter-spacing:-0.01em; }
-  .history-empty { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted2);padding:60px 0; }
-  .history-empty .empty-icon { font-size:36px;opacity:.35; }
-  .history-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px; }
-  .history-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:0;overflow:hidden;display:flex;flex-direction:column; }
-  .hcard-top { padding:16px 18px 14px;flex:1; }
-  .hcard-name { font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px; }
-  .hcard-meta { font-size:11px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
-  .hcard-meta span { display:flex;align-items:center;gap:4px; }
-  .hcard-meta .dot { width:5px;height:5px;border-radius:50%;flex-shrink:0; }
-  .hcard-counts { display:flex;gap:8px;margin-bottom:14px; }
-  .hcount { flex:1;background:var(--surface2);border-radius:6px;padding:8px 10px;text-align:center; }
-  .hcount-val { font-size:18px;font-weight:300;font-family:'DM Mono',monospace;letter-spacing:-0.02em; }
-  .hcount-val.deactivate { color:var(--deactivate); }
-  .hcount-val.review { color:var(--review); }
-  .hcount-val.keep { color:var(--keep); }
-  .hcount-lbl { font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:2px; }
-  .hcard-criteria { font-size:11px;color:var(--muted2);line-height:1.7;border-top:1px solid var(--border);padding-top:10px; }
-  .hcard-criteria strong { color:var(--muted);font-weight:500; }
-  .hcard-criteria code { font-family:'DM Mono',monospace;font-size:10.5px;background:var(--bg);padding:1px 4px;border-radius:3px;color:var(--muted); }
-  .hcard-source { font-size:11px;color:var(--muted2);margin-top:8px;display:flex;align-items:center;gap:5px;flex-wrap:wrap; }
-  .hcard-source-file { font-family:'DM Mono',monospace;font-size:10.5px;color:var(--accent); }
-  .hcard-source-warn { color:var(--warn);font-size:10px; }
-  .hcard-bottom { display:flex;gap:0;border-top:1px solid var(--border); }
-  .hcard-btn { flex:1;padding:9px;background:transparent;border:none;color:var(--muted);font-size:12px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px; }
-  .hcard-btn:hover { background:var(--surface2);color:var(--text); }
-  .hcard-btn + .hcard-btn { border-left:1px solid var(--border); }
-  .hcard-btn.danger:hover { color:var(--deactivate); }
+/* ── HISTORY PAGE ── */
+#page-history{flex-direction:column;min-height:calc(100vh - 53px);}
+.hist-wrap{flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:24px;}
+.hist-top{display:flex;align-items:center;justify-content:space-between;}
+.hist-page-title{font-size:17px;font-weight:600;letter-spacing:-0.01em;}
+.hist-tabs{display:flex;gap:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.hist-tab{padding:7px 18px;border:none;background:transparent;color:var(--muted);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;}
+.hist-tab.active{background:var(--accent);color:#fff;}
+.hist-section{display:none;}
+.hist-section.active{display:block;}
+.hist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted2);padding:60px 0;text-align:center;}
+.hist-empty .empty-icon{font-size:34px;opacity:.3;}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;}
 
-  /* MODAL */
-  .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;align-items:center;justify-content:center; }
-  .modal-overlay.open { display:flex; }
-  .modal { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;width:440px;max-width:90vw; }
-  .modal h3 { font-size:15px;font-weight:600;margin-bottom:6px; }
-  .modal p { font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.6; }
-  .modal-input { width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:14px; }
-  .modal-input:focus { outline:none;border-color:var(--accent); }
-  .modal-label { font-size:11px;color:var(--muted);margin-bottom:5px;display:block; }
-  .modal-select { width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:16px;cursor:pointer; }
-  .modal-select:focus { outline:none;border-color:var(--accent); }
-  .modal-actions { display:flex;gap:8px;justify-content:flex-end; }
-  .modal-btn { padding:8px 18px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s; }
-  .modal-btn:hover { border-color:var(--muted);color:var(--text); }
-  .modal-btn.primary { background:var(--accent);border-color:var(--accent);color:#fff; }
-  .modal-btn.primary:hover { opacity:.88; }
+/* ── HISTORY CARDS ── */
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;}
+.hcard-top{padding:16px 18px 14px;flex:1;}
+.hcard-name-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.hcard-name{font-size:14px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rename-btn{flex-shrink:0;background:none;border:none;color:var(--muted2);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;transition:color .15s;}
+.rename-btn:hover{color:var(--muted);}
+.hcard-meta{font-size:11px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hcard-counts{display:flex;gap:8px;margin-bottom:14px;}
+.hcount{flex:1;background:var(--surface2);border-radius:6px;padding:8px 10px;text-align:center;}
+.hcount-val{font-size:18px;font-weight:300;font-family:'DM Mono',monospace;letter-spacing:-0.02em;}
+.hcount-val.deactivate{color:var(--deactivate);}
+.hcount-val.review{color:var(--review);}
+.hcount-val.keep{color:var(--keep);}
+.hcount-lbl{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.hcard-criteria{font-size:11px;color:var(--muted2);line-height:1.7;border-top:1px solid var(--border);padding-top:10px;}
+.hcard-criteria strong{color:var(--muted);font-weight:500;}
+.hcard-criteria code{font-family:'DM Mono',monospace;font-size:10.5px;background:var(--bg);padding:1px 4px;border-radius:3px;color:var(--muted);}
+.hcard-source{font-size:11px;color:var(--muted2);margin-top:8px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.hcard-source-file{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--accent);}
+.hcard-source-warn{color:var(--warn);font-size:10px;}
+.hcard-owner{font-size:10px;color:var(--muted2);margin-top:6px;}
+.hcard-bottom{display:flex;border-top:1px solid var(--border);}
+.hcard-btn{flex:1;padding:9px 4px;background:transparent;border:none;color:var(--muted);font-size:11.5px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;}
+.hcard-btn:hover{background:var(--surface2);color:var(--text);}
+.hcard-btn+.hcard-btn{border-left:1px solid var(--border);}
+.hcard-btn.danger:hover{color:var(--deactivate);}
 
-  ::-webkit-scrollbar { width:5px;height:5px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border2);border-radius:3px; }
+/* import card specifics */
+.icard-size{font-size:10px;font-family:'DM Mono',monospace;color:var(--muted2);}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 24px;width:420px;max-width:92vw;}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:5px;}
+.modal p{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+.modal-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;}
+.modal-input{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:14px;}
+.modal-input:focus{outline:none;border-color:var(--accent);}
+.modal-select{width:100%;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;margin-bottom:16px;cursor:pointer;}
+.modal-select:focus{outline:none;border-color:var(--accent);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-btn{padding:8px 18px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;}
+.modal-btn:hover{border-color:var(--muted);color:var(--text);}
+.modal-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.modal-btn.primary:hover{opacity:.88;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 </style>
 </head>
 <body>
 
-<!-- GATE -->
+<!-- ══ GATE ══ -->
 <div id="gate">
   <div class="gate-box">
     <div class="gate-mark">ZD</div>
-    <div class="gate-title">Macro Cleanup</div>
-    <div class="gate-sub">Enter password to continue</div>
-    <input class="gate-input" type="password" id="gate-pw" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkPw()">
-    <button class="gate-btn" onclick="checkPw()">Unlock</button>
-    <div class="gate-error" id="gate-err"></div>
+    <div id="gate-step-pw" class="gate-step active">
+      <div class="gate-title">Macro Cleanup</div>
+      <div class="gate-sub">Enter password to continue</div>
+      <input class="gate-input" type="password" id="gate-pw" placeholder="••••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+      <button class="gate-btn" onclick="checkPw()">Continue</button>
+      <div class="gate-error" id="gate-err"></div>
+    </div>
+    <div id="gate-step-name" class="gate-step">
+      <div class="gate-title">Who are you?</div>
+      <div class="gate-sub">Your name is shown on saved analyses and remembered next visit.</div>
+      <input class="gate-name-input" type="text" id="gate-name" placeholder="Your name" onkeydown="if(event.key==='Enter')checkName()">
+      <button class="gate-btn" onclick="checkName()">Get started</button>
+      <div class="gate-error" id="gate-name-err"></div>
+    </div>
   </div>
 </div>
 
-<!-- SAVE MODAL -->
+<!-- ══ SAVE MODAL ══ -->
 <div class="modal-overlay" id="save-modal">
   <div class="modal">
-    <h3>Save Analysis</h3>
-    <p>Give this analysis a name and optionally link it to one of your imported datasets. The linked filename will show in History for reference.</p>
+    <h3>Save &amp; Export</h3>
+    <p>Name this analysis. It will be saved to your History and a CSV will download.</p>
     <label class="modal-label">Analysis name</label>
     <input class="modal-input" type="text" id="save-name" placeholder="e.g. Q2 Cleanup — June 2025">
-    <label class="modal-label">Link to dataset</label>
-    <select class="modal-select" id="save-dataset">
-      <option value="">— No dataset linked —</option>
-    </select>
+    <label class="modal-label">Link to imported dataset</label>
+    <select class="modal-select" id="save-dataset"></select>
     <div class="modal-actions">
-      <button class="modal-btn" onclick="closeModal()">Cancel</button>
-      <button class="modal-btn" onclick="saveAnalysisOnly()">Save only</button>
-      <button class="modal-btn primary" onclick="saveAndExport()">Save &amp; Export CSV</button>
+      <button class="modal-btn" onclick="closeSaveModal()">Cancel</button>
+      <button class="modal-btn" onclick="doSaveOnly()">Save only</button>
+      <button class="modal-btn primary" onclick="doSaveAndExport()">Save &amp; Export CSV</button>
     </div>
   </div>
 </div>
 
-<!-- RELINK MODAL -->
-<div class="modal-overlay" id="relink-modal">
+<!-- ══ RENAME MODAL ══ -->
+<div class="modal-overlay" id="rename-modal">
   <div class="modal">
-    <h3>Re-link Dataset</h3>
-    <p>Select a currently imported dataset to link to this analysis. The analysis results are stored independently — re-linking only updates the source reference shown in History.</p>
-    <label class="modal-label">Link to dataset</label>
-    <select class="modal-select" id="relink-dataset">
-      <option value="">— No dataset linked —</option>
-    </select>
+    <h3 id="rename-modal-title">Rename</h3>
+    <label class="modal-label">New name</label>
+    <input class="modal-input" type="text" id="rename-input" onkeydown="if(event.key==='Enter')confirmRename()">
     <div class="modal-actions">
-      <button class="modal-btn" onclick="closeRelinkModal()">Cancel</button>
-      <button class="modal-btn primary" onclick="confirmRelink()">Update link</button>
+      <button class="modal-btn" onclick="closeRenameModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmRename()">Rename</button>
     </div>
   </div>
 </div>
 
+<!-- ══ HEADER ══ -->
 <header>
   <div class="logo">
     <div class="logo-mark">ZD</div>
-    <div>
-      <div class="logo-text">Macro Cleanup</div>
-      <div class="logo-sub">Zendesk — Audit Tool</div>
-    </div>
+    <div><div class="logo-text">Macro Cleanup</div><div class="logo-sub">Zendesk — Audit Tool</div></div>
   </div>
-  <div class="header-nav">
+  <div class="header-center">
     <button class="nav-tab active" id="nav-analysis" onclick="showPage('analysis')">Analysis</button>
     <button class="nav-tab" id="nav-history" onclick="showPage('history')">History</button>
   </div>
   <div class="header-right">
-    <button class="hdr-btn" id="btn-export" onclick="exportCSV()">↓ Export CSV</button>
+    <div class="user-chip" id="user-chip" onclick="promptRenameUser()">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span id="user-chip-name">—</span>
+    </div>
     <button class="hdr-btn primary" id="btn-save" onclick="openSaveModal()">Save &amp; Export</button>
   </div>
 </header>
 
-<!-- ANALYSIS PAGE -->
+<!-- ══ ANALYSIS PAGE ══ -->
 <div class="page active" id="page-analysis">
   <aside class="sidebar">
-
     <div class="sidebar-section">
       <div class="section-label">Data Source</div>
       <div class="upload-zone" id="drop-zone">
@@ -302,33 +325,18 @@
     <div class="sidebar-section">
       <div class="tier-section-hd"><div class="tier-dot-lg deactivate"></div><div class="tier-section-hd-text deactivate">Deactivate Criteria</div></div>
       <div class="criterion">
-        <div class="criterion-header">
-          <label>30d usage (all languages combined)</label>
-          <label class="na-toggle"><input type="checkbox" id="d-usage-na" onchange="toggleNA('d-usage-fields',this)"><span class="na-pill">N/A</span></label>
-        </div>
-        <div class="criterion-body" id="d-usage-fields">
-          <div class="input-row"><span class="op-badge">≤</span><input type="number" id="d-usage" value="0" min="0"></div>
-        </div>
+        <div class="criterion-header"><label>30d usage (all languages combined)</label><label class="na-toggle"><input type="checkbox" id="d-usage-na" onchange="toggleNA('d-usage-fields',this)"><span class="na-pill">N/A</span></label></div>
+        <div class="criterion-body" id="d-usage-fields"><div class="input-row"><span class="op-badge">≤</span><input type="number" id="d-usage" value="0" min="0"></div></div>
       </div>
       <div class="connector-row"><div class="connector-line"></div><div class="connector-toggle"><button id="d-c1-and" class="active-and" onclick="setConnector('d-c1','and')">AND</button><button id="d-c1-or" onclick="setConnector('d-c1','or')">OR</button></div><div class="connector-line"></div></div>
       <div class="criterion">
-        <div class="criterion-header">
-          <label>Created before</label>
-          <label class="na-toggle"><input type="checkbox" id="d-created-na" onchange="toggleNA('d-created-fields',this)"><span class="na-pill">N/A</span></label>
-        </div>
-        <div class="criterion-body" id="d-created-fields">
-          <div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="d-created" value="2024-01-01"></div>
-        </div>
+        <div class="criterion-header"><label>Created before</label><label class="na-toggle"><input type="checkbox" id="d-created-na" onchange="toggleNA('d-created-fields',this)"><span class="na-pill">N/A</span></label></div>
+        <div class="criterion-body" id="d-created-fields"><div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="d-created" value="2024-01-01"></div></div>
       </div>
       <div class="connector-row"><div class="connector-line"></div><div class="connector-toggle"><button id="d-c2-and" class="active-and" onclick="setConnector('d-c2','and')">AND</button><button id="d-c2-or" onclick="setConnector('d-c2','or')">OR</button></div><div class="connector-line"></div></div>
       <div class="criterion">
-        <div class="criterion-header">
-          <label>Updated before</label>
-          <label class="na-toggle"><input type="checkbox" id="d-updated-na" onchange="toggleNA('d-updated-fields',this)"><span class="na-pill">N/A</span></label>
-        </div>
-        <div class="criterion-body" id="d-updated-fields">
-          <div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="d-updated" value="2024-01-01"></div>
-        </div>
+        <div class="criterion-header"><label>Updated before</label><label class="na-toggle"><input type="checkbox" id="d-updated-na" onchange="toggleNA('d-updated-fields',this)"><span class="na-pill">N/A</span></label></div>
+        <div class="criterion-body" id="d-updated-fields"><div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="d-updated" value="2024-01-01"></div></div>
       </div>
     </div>
 
@@ -336,33 +344,18 @@
       <div class="tier-section-hd"><div class="tier-dot-lg review"></div><div class="tier-section-hd-text review">Review Criteria</div></div>
       <div class="tier-logic-note">Matched when not already flagged for Deactivation.</div>
       <div class="criterion">
-        <div class="criterion-header">
-          <label>30d usage (all languages combined)</label>
-          <label class="na-toggle"><input type="checkbox" id="r-usage-na" onchange="toggleNA('r-usage-fields',this)"><span class="na-pill">N/A</span></label>
-        </div>
-        <div class="criterion-body" id="r-usage-fields">
-          <div class="input-row"><span class="op-badge">&lt;</span><input type="number" id="r-usage" value="5" min="0"></div>
-        </div>
+        <div class="criterion-header"><label>30d usage (all languages combined)</label><label class="na-toggle"><input type="checkbox" id="r-usage-na" onchange="toggleNA('r-usage-fields',this)"><span class="na-pill">N/A</span></label></div>
+        <div class="criterion-body" id="r-usage-fields"><div class="input-row"><span class="op-badge">&lt;</span><input type="number" id="r-usage" value="5" min="0"></div></div>
       </div>
       <div class="connector-row"><div class="connector-line"></div><div class="connector-toggle"><button id="r-c1-and" class="active-and" onclick="setConnector('r-c1','and')">AND</button><button id="r-c1-or" onclick="setConnector('r-c1','or')">OR</button></div><div class="connector-line"></div></div>
       <div class="criterion">
-        <div class="criterion-header">
-          <label>Created before</label>
-          <label class="na-toggle"><input type="checkbox" id="r-created-na" onchange="toggleNA('r-created-fields',this)"><span class="na-pill">N/A</span></label>
-        </div>
-        <div class="criterion-body" id="r-created-fields">
-          <div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="r-created" value="2025-01-01"></div>
-        </div>
+        <div class="criterion-header"><label>Created before</label><label class="na-toggle"><input type="checkbox" id="r-created-na" onchange="toggleNA('r-created-fields',this)"><span class="na-pill">N/A</span></label></div>
+        <div class="criterion-body" id="r-created-fields"><div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="r-created" value="2025-01-01"></div></div>
       </div>
       <div class="connector-row"><div class="connector-line"></div><div class="connector-toggle"><button id="r-c2-and" class="active-and" onclick="setConnector('r-c2','and')">AND</button><button id="r-c2-or" onclick="setConnector('r-c2','or')">OR</button></div><div class="connector-line"></div></div>
       <div class="criterion">
-        <div class="criterion-header">
-          <label>Updated before</label>
-          <label class="na-toggle"><input type="checkbox" id="r-updated-na" onchange="toggleNA('r-updated-fields',this)"><span class="na-pill">N/A</span></label>
-        </div>
-        <div class="criterion-body" id="r-updated-fields">
-          <div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="r-updated" value="2025-01-01"></div>
-        </div>
+        <div class="criterion-header"><label>Updated before</label><label class="na-toggle"><input type="checkbox" id="r-updated-na" onchange="toggleNA('r-updated-fields',this)"><span class="na-pill">N/A</span></label></div>
+        <div class="criterion-body" id="r-updated-fields"><div class="input-row"><span class="op-badge">&lt;</span><input type="date" id="r-updated" value="2025-01-01"></div></div>
       </div>
     </div>
 
@@ -370,78 +363,104 @@
       <button id="run-btn" disabled onclick="runAnalysis()">Run Analysis</button>
     </div>
   </aside>
-
   <main class="content" id="content">
-    <div class="empty-state">
-      <div class="empty-icon">🔍</div>
-      <div class="empty-title">No data loaded</div>
-      <div class="empty-sub">Upload your Zendesk macros CSV, configure criteria in the sidebar, then run.</div>
-    </div>
+    <div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No data loaded</div><div class="empty-sub">Upload your Zendesk macros CSV, configure criteria, then run.</div></div>
   </main>
 </div>
 
-<!-- HISTORY PAGE -->
+<!-- ══ HISTORY PAGE ══ -->
 <div class="page" id="page-history">
-  <div class="history-content">
-    <div class="history-header-row">
-      <div class="history-title">Analysis History</div>
+  <div class="hist-wrap">
+    <div class="hist-top">
+      <div class="hist-page-title">History</div>
+      <div class="hist-tabs">
+        <button class="hist-tab active" id="htab-analyses" onclick="switchHistTab('analyses')">Saved Analyses</button>
+        <button class="hist-tab" id="htab-imports" onclick="switchHistTab('imports')">Imports</button>
+      </div>
     </div>
-    <div id="history-body"></div>
+    <div class="hist-section active" id="hsec-analyses"><div id="analyses-body"></div></div>
+    <div class="hist-section" id="hsec-imports"><div id="imports-body"></div></div>
   </div>
 </div>
 
 <script>
-// ── AUTH ──────────────────────────────────────────────────────
+// ══ AUTH & USER ══
+let currentUser = '';
+
 function checkPw() {
-  const val = document.getElementById('gate-pw').value;
-  if (val === 'L&R*macros') {
-    document.getElementById('gate').style.display = 'none';
-    loadHistory();
+  const v = document.getElementById('gate-pw').value;
+  if (v === 'L&R*macros') {
+    document.getElementById('gate-step-pw').classList.remove('active');
+    document.getElementById('gate-step-name').classList.add('active');
+    // Pre-fill if remembered
+    const saved = localStorage.getItem('zd_username');
+    if (saved) { document.getElementById('gate-name').value = saved; }
+    setTimeout(() => document.getElementById('gate-name').select(), 50);
   } else {
-    const err = document.getElementById('gate-err');
-    err.textContent = 'Incorrect password.';
+    showGateErr('gate-err', 'Incorrect password.');
     document.getElementById('gate-pw').value = '';
-    document.getElementById('gate-pw').focus();
-    setTimeout(() => err.textContent = '', 2500);
   }
 }
 
-// ── NAVIGATION ────────────────────────────────────────────────
+function checkName() {
+  const n = document.getElementById('gate-name').value.trim();
+  if (!n) { showGateErr('gate-name-err', 'Please enter your name.'); return; }
+  currentUser = n;
+  localStorage.setItem('zd_username', n);
+  document.getElementById('gate').style.display = 'none';
+  updateUserChip();
+  renderHistory();
+}
+
+function showGateErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  setTimeout(() => el.textContent = '', 2500);
+}
+
+function updateUserChip() {
+  document.getElementById('user-chip-name').textContent = currentUser;
+  document.getElementById('user-avatar').textContent = currentUser.charAt(0).toUpperCase();
+}
+
+function promptRenameUser() {
+  openRenameModal('user', null, currentUser, 'Rename your profile');
+}
+
+// ══ NAVIGATION ══
 function showPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
   document.getElementById('nav-' + p).classList.add('active');
-  if (p === 'history') { loadHistory(); setHeaderBtns(false); }
-  else { setHeaderBtns(!!results.length); }
-}
-function setHeaderBtns(show) {
-  document.getElementById('btn-export').style.display = show ? 'inline-block' : 'none';
-  document.getElementById('btn-save').style.display   = show ? 'inline-block' : 'none';
+  document.getElementById('btn-save').style.display = (p === 'analysis' && results.length) ? 'inline-block' : 'none';
+  if (p === 'history') renderHistory();
 }
 
-// ── STATE ─────────────────────────────────────────────────────
+function switchHistTab(tab) {
+  document.querySelectorAll('.hist-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.hist-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('htab-' + tab).classList.add('active');
+  document.getElementById('hsec-' + tab).classList.add('active');
+}
+
+// ══ STORAGE KEYS (per user) ══
+function lsKey(type) { return `zd_${type}_${currentUser}`; }
+function getSavedAnalyses() { try { return JSON.parse(localStorage.getItem(lsKey('analyses'))) || []; } catch { return []; } }
+function putSavedAnalyses(a) { localStorage.setItem(lsKey('analyses'), JSON.stringify(a)); }
+function getSavedImports() { try { return JSON.parse(localStorage.getItem(lsKey('imports'))) || []; } catch { return []; } }
+function putSavedImports(a) { localStorage.setItem(lsKey('imports'), JSON.stringify(a)); }
+
+// ══ STATE ══
 let rawRows = [];
 let results = [];
-let currentFilter = 'all';
-let currentSort = { col: 'tier_rank', dir: 'asc' };
-let searchQuery = '';
-let currentPage = 1;
+let currentFilter = 'all', currentSort = { col:'tier_rank', dir:'asc' }, searchQuery = '', currentPage = 1;
 const PAGE_SIZE = 50;
-const connectors = { 'd-c1': 'and', 'd-c2': 'and', 'r-c1': 'and', 'r-c2': 'and' };
+const connectors = { 'd-c1':'and','d-c2':'and','r-c1':'and','r-c2':'and' };
 let activeFilter = 'true';
-let currentFileName = '';
-let lastCfg = null;
+let currentFileName = '', currentImportId = null, lastCfg = null;
 
-// importedDatasets: { id, name, rows[] } — kept in memory per session
-let importedDatasets = [];
-
-// savedAnalyses: stored in localStorage
-const LS_KEY = 'zd_macro_analyses';
-function getSaved() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } }
-function putSaved(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
-
-// ── UPLOAD / DRAG ─────────────────────────────────────────────
+// ══ UPLOAD ══
 const dropZone = document.getElementById('drop-zone');
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
@@ -449,170 +468,158 @@ dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.
 
 function handleFile(file) {
   if (!file) return;
-  currentFileName = file.name;
-  document.getElementById('file-name').textContent = file.name;
-  Papa.parse(file, {
-    header: true, skipEmptyLines: true,
-    complete: res => {
-      rawRows = res.data;
-      // Register dataset in session memory
-      const existing = importedDatasets.find(d => d.name === file.name);
-      if (!existing) {
-        importedDatasets.push({ id: 'ds_' + Date.now(), name: file.name, rows: res.data });
-      } else {
-        existing.rows = res.data; // refresh
+  const reader = new FileReader();
+  reader.onload = e => {
+    const csvText = e.target.result;
+    Papa.parse(csvText, {
+      header: true, skipEmptyLines: true,
+      complete: res => {
+        rawRows = res.data;
+        // Save import to localStorage (store CSV text + metadata)
+        const imports = getSavedImports();
+        const id = 'imp_' + Date.now();
+        currentImportId = id;
+        currentFileName = file.name;
+        imports.unshift({ id, name: file.name, originalName: file.name, uploadedAt: new Date().toISOString(), rows: rawRows.length, csvText });
+        putSavedImports(imports);
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('run-btn').disabled = false;
+        document.getElementById('run-btn').textContent = `Run Analysis (${rawRows.length} rows)`;
       }
-      document.getElementById('run-btn').disabled = false;
-      document.getElementById('run-btn').textContent = `Run Analysis (${rawRows.length} rows)`;
-    }
-  });
+    });
+  };
+  reader.readAsText(file);
 }
 
-// ── ACTIVE FILTER ─────────────────────────────────────────────
+// ══ CONTROLS ══
 function setActiveFilter(val) {
   activeFilter = val;
   ['true','all'].forEach(v => document.getElementById('af-'+v).classList.toggle('active', v===val));
 }
-function toggleNA(bodyId, checkbox) {
-  document.getElementById(bodyId).classList.toggle('disabled', checkbox.checked);
-}
-
-// ── CONNECTOR TOGGLE ──────────────────────────────────────────
+function toggleNA(bodyId, cb) { document.getElementById(bodyId).classList.toggle('disabled', cb.checked); }
 function setConnector(id, val) {
   connectors[id] = val;
-  document.getElementById(id+'-and').className = val==='and' ? 'active-and' : '';
-  document.getElementById(id+'-or').className  = val==='or'  ? 'active-or'  : '';
+  document.getElementById(id+'-and').className = val==='and'?'active-and':'';
+  document.getElementById(id+'-or').className  = val==='or' ?'active-or' :'';
 }
 
-// ── TITLE PARSING ─────────────────────────────────────────────
+// ══ PARSING ══
 const LANG_RE = /^([A-Z]{2,3})\s*[-–]\s*(.+)/i;
 const KNOWN_LANG = new Set(['EN','FR','ES','PT','DE','IT','JA','JP','RU','KO','KOR','SA','SP','SAL','TIA','BEN','MG']);
-
 function parseTitle(title) {
-  let t = (title || '').trim(), category = '';
-  if (t.includes('::')) { const i = t.indexOf('::'); category = t.slice(0,i).trim(); t = t.slice(i+2).trim(); }
-  const m = LANG_RE.exec(t);
-  if (m) { const c = m[1].toUpperCase(); if (KNOWN_LANG.has(c)||c.length===2) return { category, lang:c, base:m[2].trim() }; }
-  return { category, lang:'UNK', base:t };
+  let t=(title||'').trim(), cat='';
+  if(t.includes('::')){const i=t.indexOf('::');cat=t.slice(0,i).trim();t=t.slice(i+2).trim();}
+  const m=LANG_RE.exec(t);
+  if(m){const c=m[1].toUpperCase();if(KNOWN_LANG.has(c)||c.length===2)return{category:cat,lang:c,base:m[2].trim()};}
+  return{category:cat,lang:'UNK',base:t};
 }
-function normaliseBase(b) { return b.toLowerCase().replace(/[^a-z0-9]/g,''); }
+function norm(b){return b.toLowerCase().replace(/[^a-z0-9]/g,'');}
 
-// ── TIER LOGIC ────────────────────────────────────────────────
-function evalTier(fam, cfg) {
-  const { dUsage,dCreated,dUpdated,dC1,dC2,rUsage,rCreated,rUpdated,rC1,rC2 } = cfg;
-  function applyChain(conds, ops) {
-    if (!conds.length) return false;
-    let r = conds[0];
-    for (let i=1;i<conds.length;i++) r = ops[i-1]==='and' ? (r&&conds[i]) : (r||conds[i]);
-    return r;
-  }
-  function buildChain(triples) {
-    const active = triples.filter(t=>t.val!==null);
-    const conds = active.map(t=>!!t.val);
-    const ops = active.slice(0,-1).map(t=>t.op);
-    return applyChain(conds, ops);
-  }
-  const deactivate = buildChain([
-    { val: dUsage!==null   ? fam.totalUsage30<=dUsage                               : null, op:dC1 },
-    { val: dCreated!==null ? !!(fam.earliestCreated&&fam.earliestCreated<dCreated)   : null, op:dC2 },
-    { val: dUpdated!==null ? !!(fam.latestUpdated&&fam.latestUpdated<dUpdated)       : null, op:null },
-  ]);
-  if (deactivate) return { tier:'deactivate', tierRank:0 };
-  const review = buildChain([
-    { val: rUsage!==null   ? fam.totalUsage30<rUsage                                : null, op:rC1 },
-    { val: rCreated!==null ? !!(fam.earliestCreated&&fam.earliestCreated<rCreated)   : null, op:rC2 },
-    { val: rUpdated!==null ? !!(fam.latestUpdated&&fam.latestUpdated<rUpdated)       : null, op:null },
-  ]);
-  if (review) return { tier:'review', tierRank:1 };
-  return { tier:'keep', tierRank:2 };
-}
-
-// ── ANALYSIS ──────────────────────────────────────────────────
-function readCfg() {
-  const naOf = id => document.getElementById(id).checked;
-  return {
-    dUsage:   naOf('d-usage-na')   ? null : (parseInt(document.getElementById('d-usage').value)   ?? 0),
-    dCreated: naOf('d-created-na') ? null : new Date(document.getElementById('d-created').value),
-    dUpdated: naOf('d-updated-na') ? null : new Date(document.getElementById('d-updated').value),
-    dC1: connectors['d-c1'], dC2: connectors['d-c2'],
-    rUsage:   naOf('r-usage-na')   ? null : (parseInt(document.getElementById('r-usage').value)   ?? 0),
-    rCreated: naOf('r-created-na') ? null : new Date(document.getElementById('r-created').value),
-    rUpdated: naOf('r-updated-na') ? null : new Date(document.getElementById('r-updated').value),
-    rC1: connectors['r-c1'], rC2: connectors['r-c2'],
-    activeFilter,
-    sourceFile: currentFileName,
-  };
-}
-
-function computeResults(rows, cfg) {
-  let filtered = rows;
-  if (cfg.activeFilter === 'true') filtered = filtered.filter(r => r.active);
-  const familyMap = {};
-  filtered.forEach(r => {
-    const key = r.baseKey || normaliseBase(r.title);
-    if (!familyMap[key]) familyMap[key] = { key, base: r.base||r.title, category: r.category, members:[] };
-    familyMap[key].members.push(r);
-  });
-  return Object.values(familyMap).map(fam => {
-    const members = fam.members;
-    const totalUsage30 = members.reduce((s,m)=>s+m.usage30,0);
-    const totalUsage7  = members.reduce((s,m)=>s+m.usage7, 0);
-    const langs = [...new Set(members.map(m=>m.lang))].filter(l=>l!=='UNK').sort();
-    const createdDates = members.map(m=>m.createdAt).filter(Boolean);
-    const updatedDates = members.map(m=>m.updatedAt).filter(Boolean);
-    const earliestCreated = createdDates.length ? new Date(Math.min(...createdDates)) : null;
-    const latestUpdated   = updatedDates.length  ? new Date(Math.max(...updatedDates)) : null;
-    const { tier, tierRank } = evalTier({ totalUsage30, earliestCreated, latestUpdated }, cfg);
-    return { key:fam.key, base:fam.base, category:fam.category, langs, members, totalUsage30, totalUsage7, earliestCreated, latestUpdated, tier, tierRank, isMultiLang: members.length>1 };
-  });
-}
-
-function parseRows(rawData) {
-  return rawData.map(r => {
-    const { category, lang, base } = parseTitle(r['Title']||'');
-    return {
-      id: r['Id']||'', title: r['Title']||'', lang, base, category,
-      baseKey: normaliseBase(base)+'|'+normaliseBase(category),
-      usage30: parseFloat(r['Usage 30d'])||0,
-      usage7:  parseInt(r['Usage 7d'])  ||0,
-      createdAt: r['Created At'] ? new Date(r['Created At']) : null,
-      updatedAt: r['Updated At'] ? new Date(r['Updated At']) : null,
-      active: String(r['Active']).toLowerCase().trim()==='true',
+function parseRows(raw) {
+  return raw.map(r=>{
+    const{category,lang,base}=parseTitle(r['Title']||'');
+    return{
+      id:r['Id']||'',title:r['Title']||'',lang,base,category,
+      baseKey:norm(base)+'|'+norm(category),
+      usage30:parseFloat(r['Usage 30d'])||0,
+      usage7:parseInt(r['Usage 7d'])||0,
+      createdAt:r['Created At']?new Date(r['Created At']):null,
+      updatedAt:r['Updated At']?new Date(r['Updated At']):null,
+      active:String(r['Active']).toLowerCase().trim()==='true',
     };
   });
 }
 
-function runAnalysis() {
-  const cfg = readCfg();
-  lastCfg = cfg;
-  const parsedRows = parseRows(rawRows);
-  results = computeResults(parsedRows, cfg);
-  setHeaderBtns(true);
+// ══ TIER LOGIC ══
+function evalTier(fam,cfg){
+  const{dUsage,dCreated,dUpdated,dC1,dC2,rUsage,rCreated,rUpdated,rC1,rC2}=cfg;
+  function chain(triples){
+    const act=triples.filter(t=>t.val!==null);
+    if(!act.length)return false;
+    let r=!!act[0].val;
+    for(let i=1;i<act.length;i++)r=act[i-1].op==='and'?(r&&!!act[i].val):(r||!!act[i].val);
+    return r;
+  }
+  const deact=chain([
+    {val:dUsage!==null?fam.totalUsage30<=dUsage:null,op:dC1},
+    {val:dCreated!==null?!!(fam.earliestCreated&&fam.earliestCreated<dCreated):null,op:dC2},
+    {val:dUpdated!==null?!!(fam.latestUpdated&&fam.latestUpdated<dUpdated):null,op:null},
+  ]);
+  if(deact)return{tier:'deactivate',tierRank:0};
+  const rev=chain([
+    {val:rUsage!==null?fam.totalUsage30<rUsage:null,op:rC1},
+    {val:rCreated!==null?!!(fam.earliestCreated&&fam.earliestCreated<rCreated):null,op:rC2},
+    {val:rUpdated!==null?!!(fam.latestUpdated&&fam.latestUpdated<rUpdated):null,op:null},
+  ]);
+  if(rev)return{tier:'review',tierRank:1};
+  return{tier:'keep',tierRank:2};
+}
+
+function readCfg(){
+  const na=id=>document.getElementById(id).checked;
+  return{
+    dUsage:  na('d-usage-na')  ?null:parseInt(document.getElementById('d-usage').value)??0,
+    dCreated:na('d-created-na')?null:new Date(document.getElementById('d-created').value),
+    dUpdated:na('d-updated-na')?null:new Date(document.getElementById('d-updated').value),
+    dC1:connectors['d-c1'],dC2:connectors['d-c2'],
+    rUsage:  na('r-usage-na')  ?null:parseInt(document.getElementById('r-usage').value)??0,
+    rCreated:na('r-created-na')?null:new Date(document.getElementById('r-created').value),
+    rUpdated:na('r-updated-na')?null:new Date(document.getElementById('r-updated').value),
+    rC1:connectors['r-c1'],rC2:connectors['r-c2'],
+    activeFilter,sourceFile:currentFileName,importId:currentImportId,
+  };
+}
+
+function computeResults(raw,cfg){
+  let rows=parseRows(raw);
+  if(cfg.activeFilter==='true')rows=rows.filter(r=>r.active);
+  const map={};
+  rows.forEach(r=>{
+    const k=r.baseKey||norm(r.title);
+    if(!map[k])map[k]={key:k,base:r.base||r.title,category:r.category,members:[]};
+    map[k].members.push(r);
+  });
+  return Object.values(map).map(fam=>{
+    const m=fam.members;
+    const totalUsage30=m.reduce((s,x)=>s+x.usage30,0);
+    const totalUsage7=m.reduce((s,x)=>s+x.usage7,0);
+    const langs=[...new Set(m.map(x=>x.lang))].filter(l=>l!=='UNK').sort();
+    const cd=m.map(x=>x.createdAt).filter(Boolean);
+    const ud=m.map(x=>x.updatedAt).filter(Boolean);
+    const earliestCreated=cd.length?new Date(Math.min(...cd)):null;
+    const latestUpdated=ud.length?new Date(Math.max(...ud)):null;
+    const{tier,tierRank}=evalTier({totalUsage30,earliestCreated,latestUpdated},cfg);
+    return{key:fam.key,base:fam.base,category:fam.category,langs,members:m,totalUsage30,totalUsage7,earliestCreated,latestUpdated,tier,tierRank,isMultiLang:m.length>1};
+  });
+}
+
+function runAnalysis(){
+  lastCfg=readCfg();
+  results=computeResults(rawRows,lastCfg);
+  currentFilter='all';searchQuery='';currentPage=1;
+  document.getElementById('btn-save').style.display='inline-block';
   renderResults();
 }
 
-// ── RENDER ────────────────────────────────────────────────────
-function renderResults() {
-  const content = document.getElementById('content');
-  const byTier = t => results.filter(r=>r.tier===t);
-  const filtered = getFiltered();
-  let html = '';
-
-  html += `<div class="summary-grid">
+// ══ RENDER ANALYSIS ══
+function renderResults(){
+  const content=document.getElementById('content');
+  const byT=t=>results.filter(r=>r.tier===t);
+  const filt=getFiltered();
+  let h='';
+  h+=`<div class="summary-grid">
     <div class="stat-card total"><div class="stat-label">Total Macro Families</div><div class="stat-value total">${results.length}</div><div class="stat-sub">${results.reduce((s,r)=>s+r.members.length,0)} individual macros</div></div>
-    <div class="stat-card deactivate"><div class="stat-label">Flag — Deactivate</div><div class="stat-value deactivate">${byTier('deactivate').length}</div><div class="stat-sub">${pct(byTier('deactivate').length,results.length)}% of families</div></div>
-    <div class="stat-card review"><div class="stat-label">Flag — Review</div><div class="stat-value review">${byTier('review').length}</div><div class="stat-sub">${pct(byTier('review').length,results.length)}% of families</div></div>
-    <div class="stat-card keep"><div class="stat-label">Keep Active</div><div class="stat-value keep">${byTier('keep').length}</div><div class="stat-sub">${pct(byTier('keep').length,results.length)}% of families</div></div>
+    <div class="stat-card deactivate"><div class="stat-label">Flag — Deactivate</div><div class="stat-value deactivate">${byT('deactivate').length}</div><div class="stat-sub">${pct(byT('deactivate').length,results.length)}% of families</div></div>
+    <div class="stat-card review"><div class="stat-label">Flag — Review</div><div class="stat-value review">${byT('review').length}</div><div class="stat-sub">${pct(byT('review').length,results.length)}% of families</div></div>
+    <div class="stat-card keep"><div class="stat-label">Keep Active</div><div class="stat-value keep">${byT('keep').length}</div><div class="stat-sub">${pct(byT('keep').length,results.length)}% of families</div></div>
   </div>`;
-
-  const maxUsage = Math.max(...results.map(r=>r.totalUsage30),1);
-  html += `<div>
-    <div class="section-title" style="margin-bottom:10px">Macro Families <span class="count-badge">${filtered.length} shown</span></div>
+  const mx=Math.max(...results.map(r=>r.totalUsage30),1);
+  h+=`<div><div class="section-title" style="margin-bottom:10px">Macro Families <span class="count-badge">${filt.length} shown</span></div>
     <div class="filters-row" style="margin-bottom:10px">
       <button class="filter-tab ${currentFilter==='all'?'active':''}" onclick="setFilter('all')">All (${results.length})</button>
-      <button class="filter-tab ${currentFilter==='deactivate'?'active':''}" onclick="setFilter('deactivate')">🔴 Deactivate (${byTier('deactivate').length})</button>
-      <button class="filter-tab ${currentFilter==='review'?'active':''}" onclick="setFilter('review')">🟡 Review (${byTier('review').length})</button>
-      <button class="filter-tab ${currentFilter==='keep'?'active':''}" onclick="setFilter('keep')">🟢 Keep (${byTier('keep').length})</button>
+      <button class="filter-tab ${currentFilter==='deactivate'?'active':''}" onclick="setFilter('deactivate')">🔴 Deactivate (${byT('deactivate').length})</button>
+      <button class="filter-tab ${currentFilter==='review'?'active':''}" onclick="setFilter('review')">🟡 Review (${byT('review').length})</button>
+      <button class="filter-tab ${currentFilter==='keep'?'active':''}" onclick="setFilter('keep')">🟢 Keep (${byT('keep').length})</button>
       <input class="search-box" type="text" placeholder="Search macros…" value="${searchQuery}" oninput="setSearch(this.value)">
     </div>
     <div class="table-wrap"><table>
@@ -625,13 +632,11 @@ function renderResults() {
         <th onclick="sortBy('langs')">Languages <span class="sort-arrow">${sa('langs')}</span></th>
         <th onclick="sortBy('earliestCreated')">Created <span class="sort-arrow">${sa('earliestCreated')}</span></th>
         <th onclick="sortBy('latestUpdated')">Last Updated <span class="sort-arrow">${sa('latestUpdated')}</span></th>
-      </tr></thead>
-      <tbody>`;
-
-  paginate(filtered).forEach(fam => {
-    const p2 = Math.min(100,(fam.totalUsage30/maxUsage)*100);
-    const bc = fam.tier==='deactivate'?'var(--deactivate)':fam.tier==='review'?'var(--review)':'var(--keep)';
-    html += `<tr>
+      </tr></thead><tbody>`;
+  paginate(filt).forEach(fam=>{
+    const p2=Math.min(100,(fam.totalUsage30/mx)*100);
+    const bc=fam.tier==='deactivate'?'var(--deactivate)':fam.tier==='review'?'var(--review)':'var(--keep)';
+    h+=`<tr>
       <td><div class="tier-pill ${fam.tier}"><div class="dot"></div>${tierLabel(fam.tier)}</div></td>
       <td style="max-width:220px"><div class="cell-title">${esc(fam.base)}</div>${fam.members.length>1?`<div class="cell-sub">${fam.members.length} language variants</div>`:''}</td>
       <td><div class="cell-sub">${esc(fam.category)||'—'}</div></td>
@@ -642,29 +647,27 @@ function renderResults() {
       <td><div class="cell-mono">${fmtDate(fam.latestUpdated)}</div></td>
     </tr>`;
   });
-
-  html += `</tbody></table>${renderPagination(filtered.length)}</div></div>`;
-  content.innerHTML = html;
+  h+=`</tbody></table>${renderPagination(filt.length)}</div></div>`;
+  content.innerHTML=h;
 }
 
-function renderPagination(total) {
-  const tp = Math.ceil(total/PAGE_SIZE);
-  if (tp<=1) return '';
-  let h = `<div class="pagination"><span class="page-info">${(currentPage-1)*PAGE_SIZE+1}–${Math.min(currentPage*PAGE_SIZE,total)} of ${total}</span>`;
-  h += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
-  for(let i=1;i<=tp;i++) {
-    if(i===1||i===tp||Math.abs(i-currentPage)<=2) h+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
-    else if(Math.abs(i-currentPage)===3) h+=`<span style="color:var(--muted2);font-size:12px;padding:0 2px">…</span>`;
+function renderPagination(total){
+  const tp=Math.ceil(total/PAGE_SIZE);if(tp<=1)return'';
+  let h=`<div class="pagination"><span class="page-info">${(currentPage-1)*PAGE_SIZE+1}–${Math.min(currentPage*PAGE_SIZE,total)} of ${total}</span>`;
+  h+=`<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=tp;i++){
+    if(i===1||i===tp||Math.abs(i-currentPage)<=2)h+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if(Math.abs(i-currentPage)===3)h+=`<span style="color:var(--muted2);font-size:12px;padding:0 2px">…</span>`;
   }
-  h += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===tp?'disabled':''}>›</button></div>`;
+  h+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===tp?'disabled':''}>›</button></div>`;
   return h;
 }
 
-function getFiltered() {
-  let f = results;
-  if (currentFilter!=='all') f=f.filter(r=>r.tier===currentFilter);
-  if (searchQuery) { const q=searchQuery.toLowerCase(); f=f.filter(r=>r.base.toLowerCase().includes(q)||r.category.toLowerCase().includes(q)||r.langs.some(l=>l.toLowerCase().includes(q))); }
-  return [...f].sort((a,b)=>{
+function getFiltered(){
+  let f=results;
+  if(currentFilter!=='all')f=f.filter(r=>r.tier===currentFilter);
+  if(searchQuery){const q=searchQuery.toLowerCase();f=f.filter(r=>r.base.toLowerCase().includes(q)||r.category.toLowerCase().includes(q)||r.langs.some(l=>l.toLowerCase().includes(q)));}
+  return[...f].sort((a,b)=>{
     let va=a[currentSort.col],vb=b[currentSort.col];
     if(currentSort.col==='langs'){va=a.langs.length;vb=b.langs.length;}
     if(va instanceof Date&&vb instanceof Date){va=va.getTime();vb=vb.getTime();}
@@ -685,133 +688,107 @@ function sortBy(col){
 }
 function sa(col){if(currentSort.col!==col)return'↕';return currentSort.dir==='asc'?'↑':'↓';}
 
-// ── EXPORT ────────────────────────────────────────────────────
-function buildCSV(rows) {
-  const header = ['Tier','Base Title','Category','Languages','Total 30d Usage','7d Usage','Per-Language 30d Usage','Created At','Last Updated At','Macro IDs'];
-  const data = rows.map(fam=>[
-    fam.tier, fam.base, fam.category,
-    fam.langs.join('; '), fam.totalUsage30, fam.totalUsage7,
-    fam.members.map(m=>`${m.lang}:${m.usage30}`).join('; '),
-    fmtDate(fam.earliestCreated), fmtDate(fam.latestUpdated),
-    fam.members.map(m=>m.id).join('; ')
-  ]);
-  return [header,...data].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+// ══ CSV EXPORT ══
+function buildCSV(rows){
+  const hdr=['Tier','Base Title','Category','Languages','Total 30d Usage','7d Usage','Per-Language 30d Usage','Created At','Last Updated At','Macro IDs'];
+  const data=rows.map(f=>[f.tier,f.base,f.category,f.langs.join('; '),f.totalUsage30,f.totalUsage7,f.members.map(m=>`${m.lang}:${m.usage30}`).join('; '),fmtDate(f.earliestCreated),fmtDate(f.latestUpdated),f.members.map(m=>m.id).join('; ')]);
+  return[hdr,...data].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
 }
+function dl(csv,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;a.click();}
+function slugify(s){return s.replace(/[^a-z0-9]/gi,'-').toLowerCase();}
 
-function exportCSV() {
-  const csv = buildCSV(getFiltered());
-  triggerDownload(csv, `zendesk-macro-audit-${iso()}.csv`);
-}
-
-function triggerDownload(csv, filename) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = filename;
-  a.click();
-}
-
-// ── SAVE MODAL ────────────────────────────────────────────────
-function openSaveModal() {
-  if (!results.length) return;
-  document.getElementById('save-name').value = `Analysis — ${new Date().toLocaleDateString('en-CA')}`;
-  populateDatasetSelect('save-dataset', lastCfg?.sourceFile || '');
-  document.getElementById('save-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('save-name').select(), 50);
-}
-function closeModal() { document.getElementById('save-modal').classList.remove('open'); }
-
-function populateDatasetSelect(selectId, defaultName) {
-  const sel = document.getElementById(selectId);
-  sel.innerHTML = '<option value="">— No dataset linked —</option>';
-  importedDatasets.forEach(ds => {
-    const opt = document.createElement('option');
-    opt.value = ds.id;
-    opt.textContent = ds.name;
-    if (ds.name === defaultName) opt.selected = true;
-    sel.appendChild(opt);
+// ══ SAVE MODAL ══
+function openSaveModal(){
+  if(!results.length)return;
+  document.getElementById('save-name').value=`Analysis — ${iso()}`;
+  // populate dataset dropdown from saved imports
+  const sel=document.getElementById('save-dataset');
+  sel.innerHTML='<option value="">— No dataset linked —</option>';
+  getSavedImports().forEach(imp=>{
+    const o=document.createElement('option');
+    o.value=imp.id;o.textContent=imp.name;
+    if(imp.id===currentImportId)o.selected=true;
+    sel.appendChild(o);
   });
+  document.getElementById('save-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('save-name').select(),50);
 }
+function closeSaveModal(){document.getElementById('save-modal').classList.remove('open');}
 
-function doSave() {
-  const name = document.getElementById('save-name').value.trim() || `Analysis — ${iso()}`;
-  const dsId = document.getElementById('save-dataset').value;
-  const ds = importedDatasets.find(d=>d.id===dsId) || null;
-
-  const snapshot = {
-    id: 'an_' + Date.now(),
-    name,
-    savedAt: new Date().toISOString(),
-    sourceDatasetId: ds?.id || null,
-    sourceFileName: ds?.name || lastCfg?.sourceFile || null,
-    cfg: serializeCfg(lastCfg),
-    counts: {
-      total: results.length,
-      totalMacros: results.reduce((s,r)=>s+r.members.length,0),
-      deactivate: results.filter(r=>r.tier==='deactivate').length,
-      review:     results.filter(r=>r.tier==='review').length,
-      keep:       results.filter(r=>r.tier==='keep').length,
+function buildSnapshot(name,linkedImportId){
+  const imports=getSavedImports();
+  const imp=imports.find(i=>i.id===linkedImportId)||null;
+  return{
+    id:'an_'+Date.now(),name,savedAt:new Date().toISOString(),owner:currentUser,
+    linkedImportId:imp?.id||null,linkedImportName:imp?.name||null,
+    cfg:serializeCfg(lastCfg),
+    counts:{
+      total:results.length,
+      totalMacros:results.reduce((s,r)=>s+r.members.length,0),
+      deactivate:results.filter(r=>r.tier==='deactivate').length,
+      review:results.filter(r=>r.tier==='review').length,
+      keep:results.filter(r=>r.tier==='keep').length,
     },
-    // Store results for re-display (without raw content to keep size down)
-    results: results.map(r=>({
-      key:r.key, base:r.base, category:r.category, langs:r.langs,
-      totalUsage30:r.totalUsage30, totalUsage7:r.totalUsage7,
-      earliestCreated: r.earliestCreated?.toISOString()||null,
-      latestUpdated:   r.latestUpdated?.toISOString()||null,
-      tier:r.tier, tierRank:r.tierRank, isMultiLang:r.isMultiLang,
-      members: r.members.map(m=>({id:m.id,lang:m.lang,usage30:m.usage30,usage7:m.usage7})),
+    results:results.map(r=>({
+      key:r.key,base:r.base,category:r.category,langs:r.langs,
+      totalUsage30:r.totalUsage30,totalUsage7:r.totalUsage7,
+      earliestCreated:r.earliestCreated?.toISOString()||null,
+      latestUpdated:r.latestUpdated?.toISOString()||null,
+      tier:r.tier,tierRank:r.tierRank,isMultiLang:r.isMultiLang,
+      members:r.members.map(m=>({id:m.id,lang:m.lang,usage30:m.usage30,usage7:m.usage7})),
     })),
   };
-
-  const saved = getSaved();
-  saved.unshift(snapshot);
-  putSaved(saved);
-  return snapshot;
 }
 
-function saveAnalysisOnly() {
-  doSave();
-  closeModal();
-  showPage('history');
+function doSaveOnly(){
+  const name=document.getElementById('save-name').value.trim()||`Analysis — ${iso()}`;
+  const lid=document.getElementById('save-dataset').value;
+  const snap=buildSnapshot(name,lid);
+  const arr=getSavedAnalyses();arr.unshift(snap);putSavedAnalyses(arr);
+  closeSaveModal();showPage('history');
 }
 
-function saveAndExport() {
-  doSave();
-  const csv = buildCSV(getFiltered());
-  const nm = (document.getElementById('save-name').value.trim() || 'macro-audit').replace(/[^a-z0-9]/gi,'-').toLowerCase();
-  triggerDownload(csv, `${nm}-${iso()}.csv`);
-  closeModal();
-  showPage('history');
+function doSaveAndExport(){
+  const name=document.getElementById('save-name').value.trim()||`Analysis — ${iso()}`;
+  const lid=document.getElementById('save-dataset').value;
+  const snap=buildSnapshot(name,lid);
+  const arr=getSavedAnalyses();arr.unshift(snap);putSavedAnalyses(arr);
+  dl(buildCSV(getFiltered()),`${slugify(name)}-${iso()}.csv`);
+  closeSaveModal();showPage('history');
 }
 
-function serializeCfg(cfg) {
-  if (!cfg) return {};
-  const fmt = v => v === null ? 'N/A' : (v instanceof Date ? v.toISOString().slice(0,10) : v);
-  return {
-    activeFilter: cfg.activeFilter,
-    deactivate: { usage: fmt(cfg.dUsage), created: fmt(cfg.dCreated), updated: fmt(cfg.dUpdated), c1: cfg.dC1, c2: cfg.dC2 },
-    review:     { usage: fmt(cfg.rUsage), created: fmt(cfg.rCreated), updated: fmt(cfg.rUpdated), c1: cfg.rC1, c2: cfg.rC2 },
+function serializeCfg(cfg){
+  if(!cfg)return{};
+  const fmt=v=>v===null?'N/A':(v instanceof Date?v.toISOString().slice(0,10):v);
+  return{
+    activeFilter:cfg.activeFilter,
+    deactivate:{usage:fmt(cfg.dUsage),created:fmt(cfg.dCreated),updated:fmt(cfg.dUpdated),c1:cfg.dC1,c2:cfg.dC2},
+    review:{usage:fmt(cfg.rUsage),created:fmt(cfg.rCreated),updated:fmt(cfg.rUpdated),c1:cfg.rC1,c2:cfg.rC2},
   };
 }
 
-// ── HISTORY PAGE ──────────────────────────────────────────────
-function loadHistory() {
-  const saved = getSaved();
-  const body = document.getElementById('history-body');
-  if (!saved.length) {
-    body.innerHTML = `<div class="history-empty"><div class="empty-icon">🗂</div><div class="empty-title">No saved analyses</div><div class="empty-sub">Run an analysis and click "Save &amp; Export" to save it here.</div></div>`;
-    return;
-  }
-  let html = '<div class="history-grid">';
-  saved.forEach(an => {
-    const dsLinked = importedDatasets.find(d=>d.id===an.sourceDatasetId);
-    const hasSource = !!dsLinked;
-    html += `<div class="history-card" id="hcard-${an.id}">
+// ══ HISTORY RENDER ══
+function renderHistory(){
+  renderAnalyses();
+  renderImports();
+}
+
+function renderAnalyses(){
+  const body=document.getElementById('analyses-body');
+  const saved=getSavedAnalyses();
+  if(!saved.length){body.innerHTML=`<div class="hist-empty"><div class="empty-icon">📊</div><div class="empty-title">No saved analyses</div><div class="empty-sub">Run an analysis and click "Save &amp; Export" to save it here.</div></div>`;return;}
+  let h='<div class="hist-grid">';
+  saved.forEach(an=>{
+    const impStored=getSavedImports().find(i=>i.id===an.linkedImportId);
+    h+=`<div class="hcard">
       <div class="hcard-top">
-        <div class="hcard-name">${esc(an.name)}</div>
+        <div class="hcard-name-row">
+          <div class="hcard-name" title="${esc(an.name)}">${esc(an.name)}</div>
+          <button class="rename-btn" onclick="openRenameModal('analysis','${an.id}','${esc(an.name)}','Rename analysis')" title="Rename">✎</button>
+        </div>
         <div class="hcard-meta">
           <span>${new Date(an.savedAt).toLocaleDateString('en-CA',{year:'numeric',month:'short',day:'numeric'})}</span>
-          <span>·</span>
-          <span>${an.counts.total} families · ${an.counts.totalMacros} macros</span>
+          <span>·</span><span>${an.counts.total} families · ${an.counts.totalMacros} macros</span>
         </div>
         <div class="hcard-counts">
           <div class="hcount"><div class="hcount-val deactivate">${an.counts.deactivate}</div><div class="hcount-lbl">Deactivate</div></div>
@@ -819,111 +796,155 @@ function loadHistory() {
           <div class="hcount"><div class="hcount-val keep">${an.counts.keep}</div><div class="hcount-lbl">Keep</div></div>
         </div>
         <div class="hcard-criteria">
-          ${criteriaLabel('Deactivate', an.cfg?.deactivate)}
-          ${criteriaLabel('Review', an.cfg?.review)}
+          ${criteriaLine('Deactivate',an.cfg?.deactivate)}
+          ${criteriaLine('Review',an.cfg?.review)}
           <div style="margin-top:2px">Active filter: <code>${an.cfg?.activeFilter==='true'?'Active only':'All'}</code></div>
         </div>
         <div class="hcard-source">
-          ${an.sourceFileName ? `<span>Dataset:</span><span class="hcard-source-file">${esc(an.sourceFileName)}</span>${!hasSource?`<span class="hcard-source-warn">(not loaded)</span>`:''}` : `<span style="color:var(--muted2)">No dataset linked</span>`}
+          ${an.linkedImportName?`<span>Dataset:</span><span class="hcard-source-file">${esc(an.linkedImportName)}</span>${!impStored?`<span class="hcard-source-warn">⚠ deleted</span>`:''}`:`<span>No dataset linked</span>`}
         </div>
+        <div class="hcard-owner">Saved by ${esc(an.owner||'—')}</div>
       </div>
       <div class="hcard-bottom">
-        <button class="hcard-btn" onclick="loadSavedAnalysis('${an.id}')">↩ Load</button>
-        <button class="hcard-btn" onclick="exportSaved('${an.id}')">↓ Export</button>
-        <button class="hcard-btn" onclick="openRelinkModal('${an.id}')">🔗 Re-link</button>
-        <button class="hcard-btn danger" onclick="deleteSaved('${an.id}')">✕ Delete</button>
+        <button class="hcard-btn" onclick="loadAnalysis('${an.id}')">↩ Load</button>
+        <button class="hcard-btn" onclick="exportAnalysis('${an.id}')">↓ Export</button>
+        <button class="hcard-btn danger" onclick="deleteAnalysis('${an.id}')">✕ Delete</button>
       </div>
     </div>`;
   });
-  html += '</div>';
-  body.innerHTML = html;
+  h+='</div>';body.innerHTML=h;
 }
 
-function criteriaLabel(tierName, cfg) {
-  if (!cfg) return '';
-  const parts = [];
-  if (cfg.usage !== 'N/A') parts.push(`usage ${tierName==='Deactivate'?'≤':'<'} <code>${cfg.usage}</code>`);
-  if (cfg.created !== 'N/A') parts.push(`created &lt; <code>${cfg.created}</code>`);
-  if (cfg.updated !== 'N/A') parts.push(`updated &lt; <code>${cfg.updated}</code>`);
-  if (!parts.length) return `<div><strong>${tierName}:</strong> no criteria set</div>`;
-  // interleave connectors
-  let joined = parts[0];
-  if (parts[1]) joined += ` <strong style="color:var(--muted)">${cfg.c1.toUpperCase()}</strong> ` + parts[1];
-  if (parts[2]) joined += ` <strong style="color:var(--muted)">${cfg.c2.toUpperCase()}</strong> ` + parts[2];
-  return `<div><strong>${tierName}:</strong> ${joined}</div>`;
+function renderImports(){
+  const body=document.getElementById('imports-body');
+  const saved=getSavedImports();
+  if(!saved.length){body.innerHTML=`<div class="hist-empty"><div class="empty-icon">📂</div><div class="empty-title">No imports</div><div class="empty-sub">Upload a CSV on the Analysis page — it will appear here.</div></div>`;return;}
+  let h='<div class="hist-grid">';
+  saved.forEach(imp=>{
+    h+=`<div class="hcard">
+      <div class="hcard-top">
+        <div class="hcard-name-row">
+          <div class="hcard-name" title="${esc(imp.name)}">${esc(imp.name)}</div>
+          <button class="rename-btn" onclick="openRenameModal('import','${imp.id}','${esc(imp.name)}','Rename import')" title="Rename">✎</button>
+        </div>
+        <div class="hcard-meta">
+          <span>${new Date(imp.uploadedAt).toLocaleDateString('en-CA',{year:'numeric',month:'short',day:'numeric'})}</span>
+          <span>·</span><span class="icard-size">${imp.rows.toLocaleString()} rows</span>
+        </div>
+        <div class="hcard-source" style="margin-top:4px"><span>Original filename:</span><span class="hcard-source-file">${esc(imp.originalName)}</span></div>
+      </div>
+      <div class="hcard-bottom">
+        <button class="hcard-btn" onclick="loadImport('${imp.id}')">↩ Load into Analysis</button>
+        <button class="hcard-btn" onclick="downloadImport('${imp.id}')">↓ Re-download</button>
+        <button class="hcard-btn danger" onclick="deleteImport('${imp.id}')">✕ Delete</button>
+      </div>
+    </div>`;
+  });
+  h+='</div>';body.innerHTML=h;
 }
 
-function loadSavedAnalysis(id) {
-  const saved = getSaved();
-  const an = saved.find(a=>a.id===id);
-  if (!an) return;
+function criteriaLine(tierName,cfg){
+  if(!cfg)return'';
+  const parts=[];
+  if(cfg.usage!=='N/A')parts.push(`usage ${tierName==='Deactivate'?'≤':'<'} <code>${cfg.usage}</code>`);
+  if(cfg.created!=='N/A')parts.push(`created &lt; <code>${cfg.created}</code>`);
+  if(cfg.updated!=='N/A')parts.push(`updated &lt; <code>${cfg.updated}</code>`);
+  if(!parts.length)return`<div><strong>${tierName}:</strong> no criteria set</div>`;
+  let j=parts[0];
+  if(parts[1])j+=` <strong style="color:var(--muted)">${cfg.c1.toUpperCase()}</strong> `+parts[1];
+  if(parts[2])j+=` <strong style="color:var(--muted)">${cfg.c2.toUpperCase()}</strong> `+parts[2];
+  return`<div><strong>${tierName}:</strong> ${j}</div>`;
+}
 
-  // Restore results from snapshot
-  results = an.results.map(r=>({
-    ...r,
-    earliestCreated: r.earliestCreated ? new Date(r.earliestCreated) : null,
-    latestUpdated:   r.latestUpdated   ? new Date(r.latestUpdated)   : null,
-  }));
-  lastCfg = an.cfg;
-  currentFilter = 'all'; searchQuery = ''; currentPage = 1;
-
-  // If the linked dataset is loaded in memory, we're good — no re-upload needed
-  const ds = importedDatasets.find(d=>d.id===an.sourceDatasetId);
-  if (ds) {
-    rawRows = ds.rows;
-    currentFileName = ds.name;
-    document.getElementById('file-name').textContent = ds.name;
-    document.getElementById('run-btn').disabled = false;
-    document.getElementById('run-btn').textContent = `Run Analysis (${rawRows.length} rows)`;
+// ══ ANALYSIS ACTIONS ══
+function loadAnalysis(id){
+  const an=getSavedAnalyses().find(a=>a.id===id);
+  if(!an)return;
+  results=an.results.map(r=>({...r,earliestCreated:r.earliestCreated?new Date(r.earliestCreated):null,latestUpdated:r.latestUpdated?new Date(r.latestUpdated):null}));
+  lastCfg=an.cfg;
+  currentFilter='all';searchQuery='';currentPage=1;
+  // If linked import is stored, load it back
+  if(an.linkedImportId){
+    const imp=getSavedImports().find(i=>i.id===an.linkedImportId);
+    if(imp){
+      Papa.parse(imp.csvText,{header:true,skipEmptyLines:true,complete:res=>{
+        rawRows=res.data;currentFileName=imp.name;currentImportId=imp.id;
+        document.getElementById('file-name').textContent=imp.name;
+        document.getElementById('run-btn').disabled=false;
+        document.getElementById('run-btn').textContent=`Run Analysis (${rawRows.length} rows)`;
+      }});
+    }
   }
-
-  setHeaderBtns(true);
-  showPage('analysis');
-  renderResults();
+  document.getElementById('btn-save').style.display='inline-block';
+  showPage('analysis');renderResults();
 }
 
-function exportSaved(id) {
-  const saved = getSaved();
-  const an = saved.find(a=>a.id===id);
-  if (!an) return;
-  const fakeResults = an.results.map(r=>({
-    ...r,
-    earliestCreated: r.earliestCreated ? new Date(r.earliestCreated) : null,
-    latestUpdated:   r.latestUpdated   ? new Date(r.latestUpdated)   : null,
-  }));
-  const csv = buildCSV(fakeResults);
-  triggerDownload(csv, `${an.name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${iso()}.csv`);
+function exportAnalysis(id){
+  const an=getSavedAnalyses().find(a=>a.id===id);if(!an)return;
+  const fakeR=an.results.map(r=>({...r,earliestCreated:r.earliestCreated?new Date(r.earliestCreated):null,latestUpdated:r.latestUpdated?new Date(r.latestUpdated):null}));
+  dl(buildCSV(fakeR),`${slugify(an.name)}-${iso()}.csv`);
 }
 
-function deleteSaved(id) {
-  if (!confirm('Delete this saved analysis?')) return;
-  putSaved(getSaved().filter(a=>a.id!==id));
-  loadHistory();
+function deleteAnalysis(id){
+  if(!confirm('Delete this saved analysis?'))return;
+  putSavedAnalyses(getSavedAnalyses().filter(a=>a.id!==id));
+  renderAnalyses();
 }
 
-// ── RE-LINK MODAL ─────────────────────────────────────────────
-let relinkTargetId = null;
-function openRelinkModal(analysisId) {
-  relinkTargetId = analysisId;
-  const saved = getSaved();
-  const an = saved.find(a=>a.id===analysisId);
-  populateDatasetSelect('relink-dataset', an?.sourceFileName||'');
-  document.getElementById('relink-modal').classList.add('open');
-}
-function closeRelinkModal() { document.getElementById('relink-modal').classList.remove('open'); relinkTargetId=null; }
-function confirmRelink() {
-  if (!relinkTargetId) return;
-  const dsId = document.getElementById('relink-dataset').value;
-  const ds = importedDatasets.find(d=>d.id===dsId)||null;
-  const saved = getSaved();
-  const an = saved.find(a=>a.id===relinkTargetId);
-  if (an) { an.sourceDatasetId = ds?.id||null; an.sourceFileName = ds?.name||null; putSaved(saved); }
-  closeRelinkModal();
-  loadHistory();
+// ══ IMPORT ACTIONS ══
+function loadImport(id){
+  const imp=getSavedImports().find(i=>i.id===id);if(!imp)return;
+  Papa.parse(imp.csvText,{header:true,skipEmptyLines:true,complete:res=>{
+    rawRows=res.data;currentFileName=imp.name;currentImportId=imp.id;
+    document.getElementById('file-name').textContent=imp.name;
+    document.getElementById('run-btn').disabled=false;
+    document.getElementById('run-btn').textContent=`Run Analysis (${rawRows.length} rows)`;
+    showPage('analysis');
+  }});
 }
 
-// ── HELPERS ───────────────────────────────────────────────────
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function downloadImport(id){
+  const imp=getSavedImports().find(i=>i.id===id);if(!imp)return;
+  dl(imp.csvText,imp.originalName);
+}
+
+function deleteImport(id){
+  if(!confirm('Delete this import? Analyses linked to it will lose the re-run capability but remain saved.'))return;
+  putSavedImports(getSavedImports().filter(i=>i.id!==id));
+  renderImports();
+}
+
+// ══ RENAME MODAL ══
+let renameCtx={type:null,id:null};
+function openRenameModal(type,id,current,title){
+  renameCtx={type,id};
+  document.getElementById('rename-modal-title').textContent=title||'Rename';
+  document.getElementById('rename-input').value=current||'';
+  document.getElementById('rename-modal').classList.add('open');
+  setTimeout(()=>{const el=document.getElementById('rename-input');el.focus();el.select();},50);
+}
+function closeRenameModal(){document.getElementById('rename-modal').classList.remove('open');renameCtx={type:null,id:null};}
+function confirmRename(){
+  const val=document.getElementById('rename-input').value.trim();
+  if(!val)return;
+  if(renameCtx.type==='analysis'){
+    const arr=getSavedAnalyses();const it=arr.find(a=>a.id===renameCtx.id);
+    if(it){it.name=val;putSavedAnalyses(arr);}
+    renderAnalyses();
+  } else if(renameCtx.type==='import'){
+    const arr=getSavedImports();const it=arr.find(i=>i.id===renameCtx.id);
+    if(it){it.name=val;putSavedImports(arr);}
+    renderImports();
+    // update current file name label if this is the active import
+    if(renameCtx.id===currentImportId){currentFileName=val;document.getElementById('file-name').textContent=val;}
+  } else if(renameCtx.type==='user'){
+    currentUser=val;localStorage.setItem('zd_username',val);updateUserChip();
+  }
+  closeRenameModal();
+}
+
+// ══ HELPERS ══
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtDate(d){if(!d||isNaN(d))return'—';return d.toISOString().slice(0,10);}
 function pct(a,b){return b?Math.round(a/b*100):0;}
 function tierLabel(t){return t==='deactivate'?'Deactivate':t==='review'?'Review':'Keep';}
