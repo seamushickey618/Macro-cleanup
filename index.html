@@ -6,7 +6,6 @@
 <title>Macro Cleanup — Zendesk</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0e0f14;
@@ -30,40 +29,31 @@
     --r: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden; }
-  .page-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
 
-  /* ── HEADER ── */
   header {
     border-bottom: 1px solid var(--border);
-    padding: 0 28px;
+    padding: 14px 28px;
     display: flex; align-items: center; justify-content: space-between;
-    background: var(--surface); position: sticky; top: 0; z-index: 100; height: 55px;
+    background: var(--surface); position: sticky; top: 0; z-index: 100;
   }
   .logo { display: flex; align-items: center; gap: 10px; }
   .logo-mark { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: #fff; font-family: 'DM Mono', monospace; }
   .logo-text { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; }
   .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
   .header-right { display: flex; align-items: center; gap: 8px; }
+  #export-btn { display: none; padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+  #export-btn:hover { opacity: .85; }
 
-  /* Tab nav in header */
-  .tab-nav { display: flex; gap: 2px; align-items: center; }
-  .tab-nav button { padding: 6px 16px; border: none; background: transparent; color: var(--muted); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; border-radius: 6px; transition: all .15s; }
-  .tab-nav button:hover { color: var(--text); background: var(--surface2); }
-  .tab-nav button.active { color: var(--accent); background: var(--accent-glow); }
+  .main { display: flex; height: calc(100vh - 55px); overflow: hidden; }
 
-  #save-btn        { padding: 7px 14px; background: transparent; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: all .15s; }
-  #save-btn:hover  { background: var(--accent-glow); }
-  #save-export-btn { padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
-  #save-export-btn:hover { opacity: .85; }
-
-  /* ── LAYOUT ── */
-  .main { display: flex; overflow: hidden; width: 100%; flex: 1; min-height: 0; }
+  /* SIDEBAR */
   .sidebar { width: 310px; min-width: 310px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; display: flex; flex-direction: column; }
   .sidebar-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
   .sidebar-section:last-child { border-bottom: none; }
   .section-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 
+  /* Upload */
   .upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--r); padding: 18px 14px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
   .upload-zone:hover, .upload-zone.dragging { border-color: var(--accent); background: var(--accent-glow); }
   .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
@@ -72,12 +62,14 @@
   .upload-text strong { color: var(--text); font-weight: 500; }
   #file-name { font-size: 11px; color: var(--accent); margin-top: 7px; font-family: 'DM Mono', monospace; word-break: break-all; }
 
+  /* Active filter toggle */
   .active-filter-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
   .active-filter-row label { font-size: 12px; color: var(--muted); margin: 0; }
   .seg-ctrl { display: flex; background: var(--bg); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; }
   .seg-ctrl button { padding: 4px 12px; border: none; background: transparent; color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; white-space: nowrap; }
   .seg-ctrl button.active { background: var(--accent); color: #fff; }
 
+  /* N/A toggle per criterion */
   .criterion-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
   .criterion-header label { margin: 0; }
   .na-toggle { display: flex; align-items: center; gap: 5px; cursor: pointer; user-select: none; }
@@ -87,6 +79,7 @@
   .criterion-body { transition: opacity .2s; }
   .criterion-body.disabled { opacity: .25; pointer-events: none; }
 
+  /* Criteria inputs */
   .criterion { margin-bottom: 11px; }
   .criterion:last-child { margin-bottom: 0; }
   label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
@@ -100,6 +93,7 @@
   input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.5); }
   .op-badge { font-size: 10px; font-weight: 600; font-family: 'DM Mono', monospace; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
+  /* AND/OR connector */
   .connector-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 10px; }
   .connector-line { flex: 1; height: 1px; background: var(--border); }
   .connector-toggle { display: flex; background: var(--bg); border: 1px solid var(--border2); border-radius: 20px; overflow: hidden; flex-shrink: 0; }
@@ -107,6 +101,7 @@
   .connector-toggle button.active-or  { background: var(--review); color: #111; }
   .connector-toggle button.active-and { background: var(--deactivate); color: #fff; }
 
+  /* Tier section header */
   .tier-section-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
   .tier-dot-lg { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   .tier-dot-lg.deactivate { background: var(--deactivate); }
@@ -116,17 +111,20 @@
   .tier-section-hd-text.review { color: var(--review); }
   .tier-logic-note { font-size: 10.5px; color: var(--muted2); margin-top: -8px; margin-bottom: 12px; line-height: 1.5; }
 
+  /* Run btn */
   #run-btn { width: 100%; padding: 10px; background: var(--accent); color: #fff; border: none; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 600; cursor: pointer; letter-spacing: .01em; transition: opacity .15s, transform .1s; }
   #run-btn:disabled { opacity: .35; cursor: not-allowed; }
   #run-btn:not(:disabled):hover { opacity: .88; }
   #run-btn:not(:disabled):active { transform: scale(.98); }
 
+  /* CONTENT */
   .content { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 22px; }
   .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted2); }
   .empty-icon { font-size: 38px; opacity: .4; }
   .empty-title { font-size: 16px; font-weight: 500; color: var(--muted); }
   .empty-sub { font-size: 13px; text-align: center; max-width: 320px; }
 
+  /* Summary cards */
   .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; position: relative; overflow: hidden; }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
@@ -142,20 +140,24 @@
   .stat-value.total     { color: var(--accent); }
   .stat-sub { font-size: 11px; color: var(--muted2); margin-top: 3px; }
 
+  /* Conflict banner */
   .conflict-banner { background: var(--warn-bg); border: 1px solid rgba(192,126,240,.25); border-radius: var(--r); padding: 13px 16px; }
   .conflict-banner h3 { font-size: 13px; font-weight: 600; color: var(--warn); margin-bottom: 7px; }
   .conflict-list { font-size: 12px; color: var(--muted); line-height: 1.8; }
   .conflict-list strong { color: var(--text); font-weight: 500; }
 
+  /* Notice */
   .notice-box { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 13px 16px; font-size: 12px; line-height: 1.7; color: var(--muted); }
   .notice-box strong { color: var(--text); font-weight: 500; }
   .notice-box h4 { color: var(--accent); font-size: 12px; font-weight: 600; margin-bottom: 6px; letter-spacing: .02em; }
   .notice-box ul { margin-left: 16px; margin-top: 4px; }
   .notice-box code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--bg); padding: 1px 4px; border-radius: 3px; }
 
+  /* Section title */
   .section-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
   .count-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; font-family: 'DM Mono', monospace; }
 
+  /* Filters row */
   .filters-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
   .filter-tab { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 12px; font-family: inherit; cursor: pointer; transition: all .15s; }
   .filter-tab:hover { border-color: var(--muted); color: var(--text); }
@@ -164,6 +166,7 @@
   .search-box:focus { outline: none; border-color: var(--accent); }
   .search-box::placeholder { color: var(--muted2); }
 
+  /* Table */
   .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
   thead { position: sticky; top: 0; z-index: 2; }
@@ -178,6 +181,7 @@
   .cell-sub { font-size: 11px; color: var(--muted); }
   .cell-mono { font-family: 'DM Mono', monospace; font-size: 11.5px; }
 
+  /* Tier pill */
   .tier-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .tier-pill.deactivate { background: var(--deactivate-bg); color: var(--deactivate); }
   .tier-pill.review    { background: var(--review-bg); color: var(--review); }
@@ -186,10 +190,12 @@
 
   .conflict-flag { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; color: var(--warn); background: var(--warn-bg); border-radius: 4px; padding: 2px 6px; margin-top: 3px; font-weight: 500; }
 
+  /* Usage bar */
   .usage-bar-wrap { display: flex; align-items: center; gap: 8px; }
   .usage-bar-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; min-width: 40px; }
   .usage-bar-fill { height: 100%; border-radius: 2px; }
 
+  /* Pagination */
   .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 10px 13px; border-top: 1px solid var(--border); background: var(--surface2); }
   .page-btn { padding: 4px 9px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 11px; font-family: 'DM Mono', monospace; cursor: pointer; transition: all .15s; }
   .page-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -197,121 +203,9 @@
   .page-btn:disabled { opacity: .3; cursor: not-allowed; }
   .page-info { font-size: 11px; color: var(--muted); margin: 0 8px; font-family: 'DM Mono', monospace; }
 
-  /* ── SIDEBAR ANALYSES ── */
-  .analyses-list { display: flex; flex-direction: column; gap: 6px; }
-  .ana-item { padding: 9px 11px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s; }
-  .ana-item:hover { border-color: var(--accent); background: var(--accent-glow); }
-  .ana-item.active-card { border-color: var(--accent); background: var(--accent-glow); }
-  .ana-item-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ana-item-meta { font-size: 10px; color: var(--muted2); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .ana-item-counts { display: flex; gap: 4px; margin-top: 4px; }
-  .ana-pill { font-size: 10px; font-family: 'DM Mono', monospace; padding: 1px 6px; border-radius: 20px; font-weight: 600; }
-  .ana-pill.d { background: var(--deactivate-bg); color: var(--deactivate); }
-  .ana-pill.r { background: var(--review-bg); color: var(--review); }
-  .ana-pill.k { background: var(--keep-bg); color: var(--keep); }
-  .ana-empty { font-size: 11px; color: var(--muted2); text-align: center; padding: 12px 0; }
-  .ana-saved-by { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; color: var(--muted); }
-
-  /* ── LOADED ANALYSIS BAR ── */
-  #loaded-bar { display: none; background: var(--surface2); border-bottom: 1px solid var(--border); padding: 8px 28px; align-items: center; gap: 12px; flex-shrink: 0; }
-  #loaded-bar.visible { display: flex; }
-  .lb-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted2); white-space: nowrap; }
-  .lb-name  { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
-  .lb-meta  { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
-  .lb-pills { display: flex; gap: 5px; flex-shrink: 0; }
-  .lb-pill  { font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
-  .lb-pill.d { background: var(--deactivate-bg); color: var(--deactivate); }
-  .lb-pill.r { background: var(--review-bg); color: var(--review); }
-  .lb-pill.k { background: var(--keep-bg); color: var(--keep); }
-.lb-close { padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border2); background: transparent; color: var(--muted2); font-size: 12px; cursor: pointer; flex-shrink: 0; transition: all .15s; margin-left: 4px; }
-  .lb-close:hover { border-color: var(--deactivate); color: var(--deactivate); }
-
-  /* ── HISTORY SECTION ── */
-  .history-section-wrap { border-top: 1px solid var(--border); padding-top: 22px; margin-top: 6px; }
-  .history-cols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; }
-  .history-col-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
-  .history-empty { color: var(--muted2); font-size: 12px; padding: 10px 0; }
-
-  /* Import rows */
-  .import-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); margin-bottom: 6px; }
-  .import-row .imp-icon { font-size: 14px; flex-shrink: 0; }
-  .import-row .imp-name { font-size: 12px; font-weight: 500; color: var(--text); }
-  .import-row .imp-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 1px; }
-
-  /* Export cards */
-  .export-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; }
-  .analysis-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s, background .15s; }
-  .analysis-card:hover { border-color: var(--accent); }
-  .analysis-card.active-card { border-color: var(--accent); background: var(--accent-glow); }
-  .export-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-  .export-card-name { font-size: 13px; font-weight: 500; color: var(--text); }
-  .export-card-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
-  .export-card-counts { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
-  .exp-count { font-size: 10px; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
-  .exp-count.deactivate { background: var(--deactivate-bg); color: var(--deactivate); }
-  .exp-count.review    { background: var(--review-bg); color: var(--review); }
-  .exp-count.keep      { background: var(--keep-bg); color: var(--keep); }
-  .export-criteria-line { font-size: 11px; color: var(--muted2); font-family: 'DM Mono', monospace; margin-bottom: 8px; line-height: 1.6; }
-  .export-criteria-line span.tier-tag { font-size: 10px; font-weight: 700; letter-spacing: .04em; margin-right: 4px; }
-  .export-criteria-line span.tier-tag.d { color: var(--deactivate); }
-  .export-criteria-line span.tier-tag.r { color: var(--review); }
-  .dl-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 5px; font-size: 11px; font-family: inherit; color: var(--muted); cursor: pointer; transition: all .15s; }
-  .dl-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* ── MODAL ── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; display: flex; align-items: center; justify-content: center; }
-  .modal-overlay.hidden { display: none; }
-  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 28px; width: 420px; max-width: 90vw; }
-  .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-  .modal p { font-size: 12px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
-  .modal input[type="text"] { width: 100%; background: var(--bg); border: 1px solid var(--border2); color: var(--text); border-radius: 6px; padding: 8px 11px; font-family: inherit; font-size: 13px; margin-bottom: 16px; transition: border-color .15s; }
-  .modal input[type="text"]:focus { outline: none; border-color: var(--accent); }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .btn-secondary { padding: 7px 16px; background: transparent; border: 1px solid var(--border2); color: var(--muted); border-radius: var(--r); font-size: 13px; font-family: inherit; cursor: pointer; transition: all .15s; }
-  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
-  .btn-primary { padding: 7px 16px; background: var(--accent); border: none; color: #fff; border-radius: var(--r); font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity .15s; }
-  .btn-primary:hover { opacity: .85; }
-  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
-
-  /* toast */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 12px; color: var(--text); z-index: 300; transform: translateY(8px); opacity: 0; transition: all .25s; pointer-events: none; }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { border-left: 3px solid var(--keep); }
-  .toast.error { border-left: 3px solid var(--deactivate); }
-
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-  /* ── HISTORY PAGE ── */
-  .history-page { display: flex; flex-direction: column; gap: 28px; max-width: 900px; }
-  .history-section-hd { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-  .hcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; }
-  .hcard + .hcard { margin-top: 8px; }
-  .hcard-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-  .hcard-body { flex: 1; min-width: 0; }
-  .hcard-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
-  .hcard-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 6px; }
-  .hcard-criteria { font-size: 11px; color: var(--muted2); font-family: 'DM Mono', monospace; line-height: 1.7; margin-bottom: 8px; }
-  .hcard-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .hcard-counts { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
-  .hbtn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid var(--border2); background: transparent; color: var(--muted); }
-  .hbtn:hover { border-color: var(--accent); color: var(--accent); }
-  .hbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .hbtn.primary:hover { opacity: .85; }
-  .hbtn.delete { color: var(--muted2); }
-  .hbtn.delete:hover { border-color: var(--deactivate); color: var(--deactivate); background: var(--deactivate-bg); }
-  .history-empty { font-size: 12px; color: var(--muted2); padding: 10px 0; }
-
-  /* Grouped import+analyses */
-  .import-group { border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 12px; }
-  .import-group-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; background: var(--surface); }
-  .import-group-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .import-group-icon { font-size: 20px; flex-shrink: 0; }
-  .import-group-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-  .linked-analyses { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
-  .linked-analysis { border-radius: 6px; margin: 0; }
-  .linked-analysis .hcard-icon { font-size: 14px; }
 </style>
 </head>
 <body>
@@ -324,31 +218,15 @@
       <div class="logo-sub">Zendesk — Audit Tool</div>
     </div>
   </div>
-  <div class="tab-nav">
-    <button id="tab-analysis" class="active" onclick="showTab('analysis')">Analysis</button>
-    <button id="tab-history"                 onclick="showTab('history')">History</button>
-  </div>
   <div class="header-right">
-    <button id="save-btn"        style="display:none" onclick="promptSave(false)">⊙ Save</button>
-    <button id="save-export-btn" style="display:none" onclick="promptSave(true)">↓ Save &amp; Export</button>
+    <button id="export-btn" onclick="exportCSV()">↓ Export Results</button>
   </div>
 </header>
 
-<div class="page-body">
-<div id="loaded-bar">
-  <div class="lb-label">Viewing</div>
-  <div>
-    <div class="lb-name" id="lb-name"></div>
-    <div class="lb-meta" id="lb-meta"></div>
-  </div>
-  <div class="lb-pills" id="lb-pills"></div>
-  <button class="hbtn" style="margin-left:auto;flex-shrink:0" onclick="showTab('history')">View History</button>
-  <button class="lb-close" onclick="clearLoadedBar()" title="Close">✕</button>
-</div>
-
 <div class="main">
-<aside class="sidebar">
+  <aside class="sidebar">
 
+    <!-- Upload -->
     <div class="sidebar-section">
       <div class="section-label">Data Source</div>
       <div class="upload-zone" id="drop-zone">
@@ -497,62 +375,24 @@
       </div>
     </div>
 
+    <!-- Run -->
     <div class="sidebar-section">
       <button id="run-btn" disabled onclick="runAnalysis()">Run Analysis</button>
     </div>
 
   </aside>
 
-  <div id="tab-analysis-content" class="content" style="flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:22px;">
+  <main class="content" id="content">
     <div class="empty-state" id="empty-state">
       <div class="empty-icon">🔍</div>
       <div class="empty-title">No data loaded</div>
       <div class="empty-sub">Upload your Zendesk macros CSV, configure criteria in the sidebar, then run.</div>
     </div>
-  </div>
-  <div id="tab-history-content" class="content" style="display:none;flex:1;overflow-y:auto;padding:24px 28px;">
-    <div id="history-page-inner"><div style="color:var(--muted2);font-size:13px">Loading…</div></div>
-  </div>
-</div><!-- /.main -->
-</div><!-- /.page-body -->
-
-<!-- ── MODALS ── -->
-<div class="modal-overlay hidden" id="import-modal">
-  <div class="modal">
-    <h3>Name this import</h3>
-    <p>Give this CSV upload a name so you and your team can identify it later in History.</p>
-    <input type="text" id="import-name-input" placeholder="e.g. June 2026 full export" maxlength="120">
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('import-modal')">Skip</button>
-      <button class="btn-primary" onclick="confirmImportName()">Save &amp; Continue</button>
-    </div>
-  </div>
+  </main>
 </div>
-
-<div class="modal-overlay hidden" id="save-modal">
-  <div class="modal">
-    <h3 id="save-modal-title">Save Analysis</h3>
-    <p id="save-modal-desc">Name this analysis so your team can reload it later. Criteria and results are stored for everyone.</p>
-    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Your name</label>
-    <input type="text" id="save-author-input" placeholder="e.g. Sarah" maxlength="60" style="margin-bottom:12px" oninput="this.style.borderColor=''" required>
-    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Analysis name</label>
-    <input type="text" id="save-name-input" placeholder="e.g. Q2 review — conservative" maxlength="120" style="margin-bottom:16px">
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('save-modal')">Cancel</button>
-      <button class="btn-primary" id="save-modal-confirm" onclick="confirmSave()">Save</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-// ── SUPABASE ────────────────────────────────────────────────────
-const SUPA_URL  = 'https://famvyqjojqyyuscfeduf.supabase.co';
-const SUPA_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbXZ5cWpvanF5eXVzY2ZlZHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4Nzg3NzgsImV4cCI6MjA5NjQ1NDc3OH0.hCqB8MxJejOhbo6_Y82DC7hoMSISCJFKfrgaBS7e7zc';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
-
-// ── STATE ────────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────
 let rawRows = [];
 let results = [];
 let currentFilter = 'all';
@@ -560,28 +400,12 @@ let currentSort = { col: 'tier_rank', dir: 'asc' };
 let searchQuery = '';
 let currentPage = 1;
 const PAGE_SIZE = 50;
+
+// connector state: 'and' | 'or'
 const connectors = { 'd-c1': 'and', 'd-c2': 'and', 'r-c1': 'and', 'r-c2': 'and' };
-let activeFilter = 'true';
-let currentImportId = null;
-let currentImportName = null;
-let pendingFile = null;
-let lastCfg = null;
+let activeFilter = 'true'; // 'true' | 'false' | 'all'
 
-window.addEventListener('DOMContentLoaded', () => {});
-
-// ── TOAST ────────────────────────────────────────────────────────
-function toast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + type;
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-// ── MODAL HELPERS ────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-// ── UPLOAD / DRAG ────────────────────────────────────────────────
+// ── UPLOAD / DRAG ─────────────────────────────────────────────
 const dropZone = document.getElementById('drop-zone');
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
@@ -589,186 +413,189 @@ dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.
 
 function handleFile(file) {
   if (!file) return;
-  pendingFile = file;
   document.getElementById('file-name').textContent = file.name;
-  // Pre-fill import name with filename (minus extension)
-  document.getElementById('import-name-input').value = file.name.replace(/\.csv$/i, '');
-  openModal('import-modal');
-}
-
-function confirmImportName() {
-  const name = document.getElementById('import-name-input').value.trim() || pendingFile.name;
-  parseAndSaveImport(pendingFile, name);
-  closeModal('import-modal');
-}
-
-function parseAndSaveImport(file, name) {
   Papa.parse(file, {
     header: true, skipEmptyLines: true,
-    complete: async res => {
+    complete: res => {
       rawRows = res.data;
       document.getElementById('run-btn').disabled = false;
       document.getElementById('run-btn').textContent = `Run Analysis (${rawRows.length} rows)`;
-
-      // Save to Supabase — skip csv_data if payload would exceed ~8 MB
-      const csvJson = JSON.stringify(rawRows);
-      const storeData = csvJson.length < 8_000_000;
-      try {
-        const { data, error } = await sb.from('imports').insert({
-          name,
-          row_count: rawRows.length,
-          csv_data: storeData ? rawRows : [],
-        }).select('id').single();
-        if (error) throw error;
-        currentImportId = data.id;
-        currentImportName = name;
-        toast(storeData ? `Import "${name}" saved` : `Import "${name}" saved (file too large to store for reload)`);
-      } catch(e) {
-        console.error('Import save failed:', e);
-        const msg = e?.message || e?.details || String(e);
-        toast(`Supabase error: ${msg}`, 'error');
-      }
     }
   });
 }
 
-// ── ACTIVE FILTER ────────────────────────────────────────────────
+// ── ACTIVE FILTER ─────────────────────────────────────────────
 function setActiveFilter(val) {
   activeFilter = val;
-  ['true','all'].forEach(v => document.getElementById('af-' + v).classList.toggle('active', v === val));
+  ['true','all'].forEach(v => {
+    document.getElementById('af-' + v).classList.toggle('active', v === val);
+  });
 }
 
 function toggleNA(bodyId, checkbox) {
-  document.getElementById(bodyId).classList.toggle('disabled', checkbox.checked);
+  const body = document.getElementById(bodyId);
+  body.classList.toggle('disabled', checkbox.checked);
 }
 
-// ── CONNECTOR TOGGLE ─────────────────────────────────────────────
+// ── CONNECTOR TOGGLE ──────────────────────────────────────────
 function setConnector(id, val) {
   connectors[id] = val;
-  document.getElementById(id+'-and').className = val==='and'?'active-and':'';
-  document.getElementById(id+'-or').className  = val==='or' ?'active-or' :'';
+  const andBtn = document.getElementById(id + '-and');
+  const orBtn  = document.getElementById(id + '-or');
+  andBtn.className = val === 'and' ? 'active-and' : '';
+  orBtn.className  = val === 'or'  ? 'active-or'  : '';
 }
 
-// ── LANG DETECTION ────────────────────────────────────────────────
-const LANG_RE   = /^([A-Z]{2,3})\s*[-–]\s*(.+)/i;
-const KNOWN_LANG = new Set(['EN','FR','ES','PT','DE','IT','JA','JP','RU','KO','KOR','SA','SP']);
-function extractLangBase(title) {
-  const t = (title||'').trim(), m = LANG_RE.exec(t);
-  if (m) { const c=m[1].toUpperCase(); if(KNOWN_LANG.has(c)||c.length===2) return {lang:c,base:m[2].trim()}; }
-  return {lang:'UNK',base:t};
-}
-function normaliseBase(b) { return b.toLowerCase().replace(/[^a-z0-9]/g,''); }
+// ── TITLE PARSING ─────────────────────────────────────────────
+// Handles: "Category::LANG - Base title", "LANG - Base title", plain
+const LANG_RE = /^([A-Z]{2,3})\s*[-–]\s*(.+)/i;
+const KNOWN_LANG = new Set(['EN','FR','ES','PT','DE','IT','JA','JP','RU','KO','KOR','SA','SP','SAL','TIA','BEN','MG']);
 
-// ── TIER LOGIC ────────────────────────────────────────────────────
+function parseTitle(title) {
+  let t = (title || '').trim();
+  let category = '';
+  if (t.includes('::')) {
+    const idx = t.indexOf('::');
+    category = t.slice(0, idx).trim();
+    t = t.slice(idx + 2).trim();
+  }
+  const m = LANG_RE.exec(t);
+  if (m) {
+    const c = m[1].toUpperCase();
+    if (KNOWN_LANG.has(c) || c.length === 2) return { category, lang: c, base: m[2].trim() };
+  }
+  return { category, lang: 'UNK', base: t };
+}
+
+function normaliseBase(b) { return b.toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+// ── TIER LOGIC ────────────────────────────────────────────────
 function evalTier(fam, cfg) {
-  const {dUsage,dCreated,dUpdated,dC1,dC2,rUsage,rCreated,rUpdated,rC1,rC2} = cfg;
-  function applyChain(conds, ops) {
-    if (!conds.length) return false;
-    let r = conds[0];
-    for (let i=1;i<conds.length;i++) r = ops[i-1]==='and'?(r&&conds[i]):(r||conds[i]);
-    return r;
+  const { dUsage, dCreated, dUpdated, dC1, dC2, rUsage, rCreated, rUpdated, rC1, rC2 } = cfg;
+
+  // Build an active-conditions-only list and collapse with connectors in order.
+  // N/A fields are simply omitted — their connector is also dropped.
+  function applyChain(conditions, ops) {
+    // conditions: array of booleans (N/A already excluded)
+    // ops: connectors between them (length = conditions.length - 1)
+    if (conditions.length === 0) return false; // all N/A = no criteria = no match
+    let result = conditions[0];
+    for (let i = 1; i < conditions.length; i++) {
+      result = ops[i - 1] === 'and' ? (result && conditions[i]) : (result || conditions[i]);
+    }
+    return result;
   }
+
   function buildChain(triples) {
-    const active = triples.filter(t=>t.val!==null);
-    const conds  = active.map(t=>!!t.val);
-    const ops    = [];
-    for(let i=0;i<active.length-1;i++) ops.push(active[i].op);
-    return applyChain(conds,ops);
+    // triples: [{val, op_after}] where op_after is the connector to the NEXT item
+    // filter out N/A (val === null), then re-pair remaining conditions with their ops
+    const active = triples.filter(t => t.val !== null);
+    const conds = active.map(t => !!t.val);
+    // ops between consecutive active items: use the op_after of the left item
+    const ops = [];
+    for (let i = 0; i < active.length - 1; i++) {
+      ops.push(active[i].op);
+    }
+    return applyChain(conds, ops);
   }
+
   const deactivate = buildChain([
-    {val:dUsage  !==null?fam.totalUsage30<=dUsage                              :null,op:dC1},
-    {val:dCreated!==null?!!(fam.earliestCreated&&fam.earliestCreated<dCreated) :null,op:dC2},
-    {val:dUpdated!==null?!!(fam.latestUpdated &&fam.latestUpdated <dUpdated)   :null,op:null},
+    { val: dUsage   !== null ? fam.totalUsage30 <= dUsage                               : null, op: dC1 },
+    { val: dCreated !== null ? !!(fam.earliestCreated && fam.earliestCreated < dCreated) : null, op: dC2 },
+    { val: dUpdated !== null ? !!(fam.latestUpdated  && fam.latestUpdated  < dUpdated)  : null, op: null },
   ]);
-  if (deactivate) return {tier:'deactivate',tierRank:0};
+
+  if (deactivate) return { tier: 'deactivate', tierRank: 0 };
+
   const review = buildChain([
-    {val:rUsage  !==null?fam.totalUsage30<rUsage                               :null,op:rC1},
-    {val:rCreated!==null?!!(fam.earliestCreated&&fam.earliestCreated<rCreated) :null,op:rC2},
-    {val:rUpdated!==null?!!(fam.latestUpdated &&fam.latestUpdated <rUpdated)   :null,op:null},
+    { val: rUsage   !== null ? fam.totalUsage30 < rUsage                                : null, op: rC1 },
+    { val: rCreated !== null ? !!(fam.earliestCreated && fam.earliestCreated < rCreated) : null, op: rC2 },
+    { val: rUpdated !== null ? !!(fam.latestUpdated  && fam.latestUpdated  < rUpdated)  : null, op: null },
   ]);
-  if (review) return {tier:'review',tierRank:1};
-  return {tier:'keep',tierRank:2};
+
+  if (review) return { tier: 'review', tierRank: 1 };
+  return { tier: 'keep', tierRank: 2 };
 }
 
-// ── ANALYSIS ──────────────────────────────────────────────────────
+// ── ANALYSIS ──────────────────────────────────────────────────
 function runAnalysis() {
   const naOf = id => document.getElementById(id).checked;
-  lastCfg = {
-    dUsage:   naOf('d-usage-na')   ? null : (parseInt(document.getElementById('d-usage').value)??0),
+
+  const cfg = {
+    dUsage:   naOf('d-usage-na')   ? null : (parseInt(document.getElementById('d-usage').value) ?? 0),
     dCreated: naOf('d-created-na') ? null : new Date(document.getElementById('d-created').value),
     dUpdated: naOf('d-updated-na') ? null : new Date(document.getElementById('d-updated').value),
-    dC1:connectors['d-c1'], dC2:connectors['d-c2'],
-    rUsage:   naOf('r-usage-na')   ? null : (parseInt(document.getElementById('r-usage').value)??0),
+    dC1: connectors['d-c1'], dC2: connectors['d-c2'],
+    rUsage:   naOf('r-usage-na')   ? null : (parseInt(document.getElementById('r-usage').value) ?? 0),
     rCreated: naOf('r-created-na') ? null : new Date(document.getElementById('r-created').value),
     rUpdated: naOf('r-updated-na') ? null : new Date(document.getElementById('r-updated').value),
-    rC1:connectors['r-c1'], rC2:connectors['r-c2'],
-    dUsageNA: naOf('d-usage-na'), dCreatedNA: naOf('d-created-na'), dUpdatedNA: naOf('d-updated-na'),
-    rUsageNA: naOf('r-usage-na'), rCreatedNA: naOf('r-created-na'), rUpdatedNA: naOf('r-updated-na'),
-    activeFilter,
+    rC1: connectors['r-c1'], rC2: connectors['r-c2'],
   };
 
+  // Parse & apply active filter
   let rows = rawRows.map(r => {
-    const {lang,base} = extractLangBase(r['Title']||'');
+    const { category, lang, base } = parseTitle(r['Title'] || '');
     const activeRaw = String(r['Active']).toLowerCase().trim();
     return {
-      id:r['Id']||'', title:r['Title']||'', lang, base, baseKey:normaliseBase(base),
-      category:r['Category']||'', usage30:parseInt(r['Usage 30d'])||0, usage7:parseInt(r['Usage 7d'])||0,
-      createdAt:r['Created At']?new Date(r['Created At']):null,
-      updatedAt:r['Updated At']?new Date(r['Updated At']):null,
-      active:activeRaw==='true', deactivate:String(r['Deactivate?']).toLowerCase()==='true',
-      actioned:String(r['Actioned in ZD']).toLowerCase()==='true',
-      notes:r['Deactive reason / Notes']||'',
+      id:          r['Id'] || '',
+      title:       r['Title'] || '',
+      lang, base, category,
+      baseKey:     normaliseBase(base) + '|' + normaliseBase(category),
+      description: r['Description'] || '',
+      usage30:     parseFloat(r['Usage 30d']) || 0,
+      usage7:      parseInt(r['Usage 7d'])    || 0,
+      usage24:     parseInt(r['Usage 24h'])   || 0,
+      usage1h:     parseInt(r['Usage 1h'])    || 0,
+      numActions:  parseInt(r['Number of actions']) || 0,
+      createdAt:   r['Created At'] ? new Date(r['Created At']) : null,
+      updatedAt:   r['Updated At'] ? new Date(r['Updated At']) : null,
+      active:      activeRaw === 'true',
     };
   });
 
-  if (activeFilter==='true')  rows = rows.filter(r=>r.active);
-  if (activeFilter==='false') rows = rows.filter(r=>!r.active);
+  if (activeFilter === 'true') rows = rows.filter(r => r.active);
 
+  // Group into language families by (category + base title)
   const familyMap = {};
   rows.forEach(r => {
-    const key = r.baseKey||normaliseBase(r.title);
-    if (!familyMap[key]) familyMap[key] = {key,base:r.base||r.title,members:[]};
+    const key = r.baseKey || normaliseBase(r.title);
+    if (!familyMap[key]) familyMap[key] = { key, base: r.base || r.title, category: r.category, members: [] };
     familyMap[key].members.push(r);
   });
 
   results = Object.values(familyMap).map(fam => {
     const members = fam.members;
-    const totalUsage30 = members.reduce((s,m)=>s+m.usage30,0);
-    const langs = [...new Set(members.map(m=>m.lang))].filter(l=>l!=='UNK').sort();
-    const createdDates = members.map(m=>m.createdAt).filter(Boolean);
-    const updatedDates = members.map(m=>m.updatedAt).filter(Boolean);
-    const earliestCreated = createdDates.length?new Date(Math.min(...createdDates)):null;
-    const latestUpdated   = updatedDates.length ?new Date(Math.max(...updatedDates)):null;
-    const hasDeactivateConflict = new Set(members.map(m=>m.deactivate)).size>1;
-    const hasActionedConflict   = new Set(members.map(m=>m.actioned)).size>1;
-    const hasConflict = hasDeactivateConflict||hasActionedConflict;
-    const {tier,tierRank} = evalTier({totalUsage30,earliestCreated,latestUpdated},lastCfg);
-    return {key:fam.key,base:fam.base,langs,members,totalUsage30,earliestCreated,latestUpdated,hasConflict,hasDeactivateConflict,hasActionedConflict,tier,tierRank,isMultiLang:members.length>1,category:members[0]?.category||''};
+    const totalUsage30 = members.reduce((s, m) => s + m.usage30, 0);
+    const totalUsage7  = members.reduce((s, m) => s + m.usage7,  0);
+    const totalUsage24 = members.reduce((s, m) => s + m.usage24, 0);
+    const langs = [...new Set(members.map(m => m.lang))].filter(l => l !== 'UNK').sort();
+    const createdDates = members.map(m => m.createdAt).filter(Boolean);
+    const updatedDates = members.map(m => m.updatedAt).filter(Boolean);
+    const earliestCreated = createdDates.length ? new Date(Math.min(...createdDates)) : null;
+    const latestUpdated   = updatedDates.length  ? new Date(Math.max(...updatedDates)) : null;
+    const { tier, tierRank } = evalTier({ totalUsage30, earliestCreated, latestUpdated }, cfg);
+    return {
+      key: fam.key, base: fam.base, category: fam.category,
+      langs, members, totalUsage30, totalUsage7, totalUsage24,
+      earliestCreated, latestUpdated, tier, tierRank,
+      isMultiLang: members.length > 1,
+    };
   });
 
-  renderResults();
+  renderResults(cfg);
 }
 
-// ── TAB ──────────────────────────────────────────────────────────
-function showTab(name) {
-  document.getElementById('tab-analysis-content').style.display = name === 'analysis' ? 'flex' : 'none';
-  document.getElementById('tab-history-content').style.display  = name === 'history'  ? 'block' : 'none';
-  document.getElementById('tab-analysis').classList.toggle('active', name === 'analysis');
-  document.getElementById('tab-history').classList.toggle('active', name === 'history');
-  if (name === 'history') loadHistoryPage();
-}
+// ── RENDER ────────────────────────────────────────────────────
+function renderResults(cfg) {
+  const content = document.getElementById('content');
+  document.getElementById('export-btn').style.display = 'inline-block';
 
-// ── RENDER ────────────────────────────────────────────────────────
-function renderResults() {
-  const content = document.getElementById('tab-analysis-content');
-  document.getElementById('save-btn').style.display        = 'inline-block';
-  document.getElementById('save-export-btn').style.display = 'inline-block';
-  const byTier = t => results.filter(r=>r.tier===t);
-  const conflicts = results.filter(r=>r.hasConflict);
+  const byTier = t => results.filter(r => r.tier === t);
   const filtered = getFiltered();
 
   let html = '';
 
+  // Summary cards
   html += `<div class="summary-grid">
     <div class="stat-card total">
       <div class="stat-label">Total Macro Families</div>
@@ -778,80 +605,58 @@ function renderResults() {
     <div class="stat-card deactivate">
       <div class="stat-label">Flag — Deactivate</div>
       <div class="stat-value deactivate">${byTier('deactivate').length}</div>
-      <div class="stat-sub">${pct(byTier('deactivate').length,results.length)}% of families</div>
+      <div class="stat-sub">${pct(byTier('deactivate').length, results.length)}% of families</div>
     </div>
     <div class="stat-card review">
       <div class="stat-label">Flag — Review</div>
       <div class="stat-value review">${byTier('review').length}</div>
-      <div class="stat-sub">${pct(byTier('review').length,results.length)}% of families</div>
+      <div class="stat-sub">${pct(byTier('review').length, results.length)}% of families</div>
     </div>
     <div class="stat-card keep">
       <div class="stat-label">Keep Active</div>
       <div class="stat-value keep">${byTier('keep').length}</div>
-      <div class="stat-sub">${pct(byTier('keep').length,results.length)}% of families</div>
+      <div class="stat-sub">${pct(byTier('keep').length, results.length)}% of families</div>
     </div>
   </div>`;
 
-  if (conflicts.length > 0) {
-    const dConf = conflicts.filter(r=>r.hasDeactivateConflict).length;
-    const aConf = conflicts.filter(r=>r.hasActionedConflict).length;
-    html += `<div class="conflict-banner">
-      <h3>⚠️ Status Conflicts Detected — ${conflicts.length} macro ${conflicts.length===1?'family':'families'}</h3>
-      <div class="conflict-list">
-        ${dConf?`<strong>${dConf} ${dConf===1?'family':'families'}</strong> have inconsistent <strong>"Deactivate?"</strong> flags across language variants.<br>`:''}
-        ${aConf?`<strong>${aConf} ${aConf===1?'family':'families'}</strong> have inconsistent <strong>"Actioned in ZD"</strong> status across language variants.<br>`:''}
-        Affected families are marked with a <span style="color:var(--warn)">⚠ Conflict</span> badge in the table.
-      </div>
-    </div>`;
-  }
-
-  const activeTrue  = results.reduce((s,f)=>s+f.members.filter(m=>m.active).length,0);
-  const activeFalse = results.reduce((s,f)=>s+f.members.filter(m=>!m.active).length,0);
-  const deactButActive = results.reduce((s,f)=>s+f.members.filter(m=>m.deactivate&&m.active).length,0);
-  html += `<div class="notice-box">
-    <h4>📋 Open Questions</h4>
-    <ul>
-      <li><strong>"Deactivate?" column:</strong> ${deactButActive} rows have <code>Active = true</code> and <code>Deactivate? = true</code> simultaneously. Does "Deactivate?" indicate the macro has been <em>identified</em> for deactivation (pending action) or that it has already been executed?</li>
-      <li><strong>"Actioned in ZD":</strong> Does this confirm the deactivation was carried out in Zendesk? If so, this may conflict with rows still showing <code>Active = true</code>.</li>
-    </ul>
-  </div>`;
-
-  const maxUsage = Math.max(...results.map(r=>r.totalUsage30),1);
+  // Table
+  const maxUsage = Math.max(...results.map(r => r.totalUsage30), 1);
   html += `<div>
     <div class="section-title" style="margin-bottom:10px">
-      Macro Families <span class="count-badge">${filtered.length} shown</span>
+      Macro Families
+      <span class="count-badge">${filtered.length} shown</span>
     </div>
     <div class="filters-row" style="margin-bottom:10px">
       <button class="filter-tab ${currentFilter==='all'?'active':''}" onclick="setFilter('all')">All (${results.length})</button>
       <button class="filter-tab ${currentFilter==='deactivate'?'active':''}" onclick="setFilter('deactivate')">🔴 Deactivate (${byTier('deactivate').length})</button>
       <button class="filter-tab ${currentFilter==='review'?'active':''}" onclick="setFilter('review')">🟡 Review (${byTier('review').length})</button>
       <button class="filter-tab ${currentFilter==='keep'?'active':''}" onclick="setFilter('keep')">🟢 Keep (${byTier('keep').length})</button>
-      <button class="filter-tab ${currentFilter==='conflict'?'active':''}" onclick="setFilter('conflict')">⚠️ Conflicts (${conflicts.length})</button>
       <input class="search-box" type="text" placeholder="Search macros…" value="${searchQuery}" oninput="setSearch(this.value)">
     </div>
-    <div class="table-wrap"><table>
-      <thead><tr>
-        <th onclick="sortBy('tier_rank')">Tier <span class="sort-arrow">${sa('tier_rank')}</span></th>
-        <th onclick="sortBy('base')">Macro Name <span class="sort-arrow">${sa('base')}</span></th>
-        <th onclick="sortBy('totalUsage30')">30d Usage <span class="sort-arrow">${sa('totalUsage30')}</span></th>
-        <th onclick="sortBy('langs')">Languages <span class="sort-arrow">${sa('langs')}</span></th>
-        <th onclick="sortBy('earliestCreated')">Created <span class="sort-arrow">${sa('earliestCreated')}</span></th>
-        <th onclick="sortBy('latestUpdated')">Last Updated <span class="sort-arrow">${sa('latestUpdated')}</span></th>
-        <th>Category</th>
-        <th>Flags</th>
-      </tr></thead>
-      <tbody>`;
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th onclick="sortBy('tier_rank')">Tier <span class="sort-arrow ${currentSort.col==='tier_rank'?'sorted':''}">${sa('tier_rank')}</span></th>
+          <th onclick="sortBy('base')">Macro Name <span class="sort-arrow ${currentSort.col==='base'?'sorted':''}">${sa('base')}</span></th>
+          <th onclick="sortBy('category')">Category <span class="sort-arrow ${currentSort.col==='category'?'sorted':''}">${sa('category')}</span></th>
+          <th onclick="sortBy('totalUsage30')">30d Usage <span class="sort-arrow ${currentSort.col==='totalUsage30'?'sorted':''}">${sa('totalUsage30')}</span></th>
+          <th onclick="sortBy('totalUsage7')">7d <span class="sort-arrow ${currentSort.col==='totalUsage7'?'sorted':''}">${sa('totalUsage7')}</span></th>
+          <th onclick="sortBy('langs')">Languages <span class="sort-arrow ${currentSort.col==='langs'?'sorted':''}">${sa('langs')}</span></th>
+          <th onclick="sortBy('earliestCreated')">Created <span class="sort-arrow ${currentSort.col==='earliestCreated'?'sorted':''}">${sa('earliestCreated')}</span></th>
+          <th onclick="sortBy('latestUpdated')">Last Updated <span class="sort-arrow ${currentSort.col==='latestUpdated'?'sorted':''}">${sa('latestUpdated')}</span></th>
+        </tr></thead>
+        <tbody>`;
 
   paginate(filtered).forEach(fam => {
-    const pct2 = Math.min(100,(fam.totalUsage30/maxUsage)*100);
+    const pct2 = Math.min(100, (fam.totalUsage30 / maxUsage) * 100);
     const barColor = fam.tier==='deactivate'?'var(--deactivate)':fam.tier==='review'?'var(--review)':'var(--keep)';
     html += `<tr>
       <td><div class="tier-pill ${fam.tier}"><div class="dot"></div>${tierLabel(fam.tier)}</div></td>
-      <td style="max-width:230px">
+      <td style="max-width:220px">
         <div class="cell-title">${esc(fam.base)}</div>
-        ${fam.members.length>1?`<div class="cell-sub">${fam.members.length} variants</div>`:''}
-        ${fam.hasConflict?`<div class="conflict-flag">⚠ Conflict</div>`:''}
+        ${fam.members.length>1?`<div class="cell-sub">${fam.members.length} language variants</div>`:''}
       </td>
+      <td><div class="cell-sub">${esc(fam.category)||'—'}</div></td>
       <td>
         <div class="usage-bar-wrap">
           <div class="cell-mono">${fam.totalUsage30}</div>
@@ -859,34 +664,20 @@ function renderResults() {
         </div>
         ${fam.isMultiLang?`<div class="cell-sub">${fam.members.map(m=>`${m.lang}:${m.usage30}`).join(' · ')}</div>`:''}
       </td>
+      <td><div class="cell-mono">${fam.totalUsage7}</div></td>
       <td><div class="cell-mono" style="font-size:11px">${fam.langs.length?fam.langs.join(', '):'—'}</div></td>
       <td><div class="cell-mono">${fmtDate(fam.earliestCreated)}</div></td>
       <td><div class="cell-mono">${fmtDate(fam.latestUpdated)}</div></td>
-      <td><div class="cell-sub">${esc(fam.category)}</div></td>
-      <td style="max-width:160px">
-        ${fam.hasDeactivateConflict?`<div class="conflict-flag">⚠ Deactivate? mismatch</div>`:''}
-        ${fam.hasActionedConflict?`<div class="conflict-flag">⚠ Actioned mismatch</div>`:''}
-        ${fam.members[0]?.notes?`<div class="cell-sub">${esc(fam.members[0].notes)}</div>`:''}
-      </td>
     </tr>`;
   });
 
   html += `</tbody></table>${renderPagination(filtered.length)}</div></div>`;
-
-  document.getElementById('empty-state').style.display = 'none';
-  let resultsDiv = document.getElementById('results-area');
-  if (!resultsDiv) {
-    resultsDiv = document.createElement('div');
-    resultsDiv.id = 'results-area';
-    resultsDiv.style.cssText = 'display:contents';
-    content.appendChild(resultsDiv);
-  }
-  resultsDiv.innerHTML = html;
+  content.innerHTML = html;
 }
 
 function renderPagination(total) {
-  const totalPages = Math.ceil(total/PAGE_SIZE);
-  if (totalPages<=1) return '';
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return '';
   let h = `<div class="pagination"><span class="page-info">${(currentPage-1)*PAGE_SIZE+1}–${Math.min(currentPage*PAGE_SIZE,total)} of ${total}</span>`;
   h += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
   for (let i=1;i<=totalPages;i++) {
@@ -899,13 +690,12 @@ function renderPagination(total) {
 
 function getFiltered() {
   let f = results;
-  if (currentFilter==='conflict') f=f.filter(r=>r.hasConflict);
-  else if (currentFilter!=='all') f=f.filter(r=>r.tier===currentFilter);
+  if (currentFilter!=='all') f=f.filter(r=>r.tier===currentFilter);
   if (searchQuery) {
     const q=searchQuery.toLowerCase();
     f=f.filter(r=>r.base.toLowerCase().includes(q)||r.category.toLowerCase().includes(q)||r.langs.some(l=>l.toLowerCase().includes(q)));
   }
-  return [...f].sort((a,b) => {
+  return [...f].sort((a,b)=>{
     let va=a[currentSort.col],vb=b[currentSort.col];
     if(currentSort.col==='langs'){va=a.langs.length;vb=b.langs.length;}
     if(va instanceof Date&&vb instanceof Date){va=va.getTime();vb=vb.getTime();}
@@ -927,325 +717,27 @@ function sortBy(col){
 }
 function sa(col){if(currentSort.col!==col)return'↕';return currentSort.dir==='asc'?'↑':'↓';}
 
-// ── SAVE (+ optional export) ──────────────────────────────────────
-let _saveWithExport = false;
-
-function promptSave(withExport) {
-  _saveWithExport = withExport;
-  document.getElementById('save-modal-title').textContent = withExport ? 'Save & Export' : 'Save Analysis';
-  document.getElementById('save-modal-desc').textContent  = withExport
-    ? 'Save this analysis for your team and download a CSV of the current results.'
-    : 'Save this analysis so your team can reload it any time from the sidebar.';
-  document.getElementById('save-modal-confirm').textContent = withExport ? 'Save & Download' : 'Save';
-  document.getElementById('save-author-input').value = localStorage.getItem('macro_author') || '';
-  document.getElementById('save-name-input').value   = currentImportName
-    ? `${currentImportName} — ${new Date().toISOString().slice(0,10)}`
-    : `Analysis ${new Date().toISOString().slice(0,10)}`;
-  openModal('save-modal');
-}
-
-async function confirmSave() {
-  const author = document.getElementById('save-author-input').value.trim() || 'Anonymous';
-  const name   = document.getElementById('save-name-input').value.trim()   || `Analysis ${new Date().toISOString().slice(0,10)}`;
-  if (!author || author === 'Anonymous') {
-    document.getElementById('save-author-input').focus();
-    document.getElementById('save-author-input').style.borderColor = 'var(--deactivate)';
-    return;
-  }
-  localStorage.setItem('macro_author', author);
-  closeModal('save-modal');
-
-  const byTier = t => results.filter(r => r.tier === t);
-  const summary = {
-    total: results.length,
-    deactivate: byTier('deactivate').length,
-    review: byTier('review').length,
-    keep: byTier('keep').length,
-    conflicts: results.filter(r => r.hasConflict).length,
-  };
-  const criteria = lastCfg ? buildCriteriaForStorage(lastCfg) : {};
-  const csvData  = _saveWithExport ? buildResultsCsv() : '';
-
-  try {
-    const { error } = await sb.from('exports').insert({
-      import_id: currentImportId, import_name: currentImportName,
-      name, criteria, summary, results_csv: csvData, type: 'analysis', saved_by: author,
-    });
-    if (error) throw error;
-    toast(`"${name}" saved`);
-    if (_saveWithExport) triggerCsvDownload(csvData, name);
-  } catch(e) {
-    console.error(e);
-    toast('Save failed', 'error');
-  }
-}
-
-function buildCriteriaForStorage(cfg) {
-  return {
-    activeFilter: cfg.activeFilter,
-    deactivate: {
-      usage:   cfg.dUsageNA   ? null : {op:'lte', value: cfg.dUsage},
-      created: cfg.dCreatedNA ? null : {op:'lt',  value: cfg.dCreated?.toISOString().slice(0,10)},
-      updated: cfg.dUpdatedNA ? null : {op:'lt',  value: cfg.dUpdated?.toISOString().slice(0,10)},
-      connector1: cfg.dC1,
-      connector2: cfg.dC2,
-    },
-    review: {
-      usage:   cfg.rUsageNA   ? null : {op:'lt', value: cfg.rUsage},
-      created: cfg.rCreatedNA ? null : {op:'lt', value: cfg.rCreated?.toISOString().slice(0,10)},
-      updated: cfg.rUpdatedNA ? null : {op:'lt', value: cfg.rUpdated?.toISOString().slice(0,10)},
-      connector1: cfg.rC1,
-      connector2: cfg.rC2,
-    },
-  };
-}
-
-function buildResultsCsv() {
-  const f = results; // export all results, not just current filter view
-  const rows = [['Tier','Base Title','Languages','Total 30d Usage','Per-Language Usage','Created At','Last Updated At','Category','Has Conflict','Deactivate? Conflict','Actioned Conflict','Macro IDs']];
-  f.forEach(fam=>rows.push([fam.tier,fam.base,fam.langs.join('; '),fam.totalUsage30,fam.members.map(m=>`${m.lang}:${m.usage30}`).join('; '),fmtDate(fam.earliestCreated),fmtDate(fam.latestUpdated),fam.category,fam.hasConflict,fam.hasDeactivateConflict,fam.hasActionedConflict,fam.members.map(m=>m.id).join('; ')]));
-  return rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-}
-
-function triggerCsvDownload(csv, name) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = `${name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
+// ── EXPORT ────────────────────────────────────────────────────
+function exportCSV(){
+  const f=getFiltered();
+  const rows=[['Tier','Base Title','Category','Languages','Total 30d Usage','7d Usage','Per-Language 30d Usage','Created At','Last Updated At','Macro IDs']];
+  f.forEach(fam=>rows.push([
+    fam.tier, fam.base, fam.category,
+    fam.langs.join('; '), fam.totalUsage30, fam.totalUsage7,
+    fam.members.map(m=>`${m.lang}:${m.usage30}`).join('; '),
+    fmtDate(fam.earliestCreated), fmtDate(fam.latestUpdated),
+    fam.members.map(m=>m.id).join('; ')
+  ]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`zendesk-macro-audit-${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
 }
 
-// ── HISTORY PAGE ──────────────────────────────────────────────────
-async function loadHistoryPage() {
-  const el = document.getElementById('history-page-inner');
-  el.innerHTML = '<div style="color:var(--muted2);font-size:13px">Loading…</div>';
-  const [impRes, anaRes] = await Promise.all([
-    sb.from('imports').select('id,name,created_at,row_count').order('created_at',{ascending:false}).limit(50),
-    sb.from('exports').select('id,name,created_at,import_id,import_name,summary,criteria,results_csv,saved_by').eq('type','analysis').order('created_at',{ascending:false}).limit(50),
-  ]);
-  const imports  = impRes.data || [];
-  const analyses = anaRes.data || [];
-
-  // Group analyses by import_id
-  const byImport = {};
-  const unlinked = [];
-  analyses.forEach(a => {
-    if (a.import_id) { (byImport[a.import_id] = byImport[a.import_id]||[]).push(a); }
-    else unlinked.push(a);
-  });
-
-  function countBadges(s) {
-    return [
-      s.deactivate!=null?`<span class="ana-pill d">🔴 ${s.deactivate}</span>`:'',
-      s.review    !=null?`<span class="ana-pill r">🟡 ${s.review}</span>`:'',
-      s.keep      !=null?`<span class="ana-pill k">🟢 ${s.keep}</span>`:'',
-    ].join('');
-  }
-
-  function analysisCard(a) {
-    const s = a.summary||{};
-    const critBlock = criteriaBlock(a.criteria);
-    const hasCsv = !!(a.results_csv);
-    const csvArg = JSON.stringify(a.results_csv||'');
-    const nameArg = JSON.stringify(a.name||'export');
-    return `<div class="hcard linked-analysis" id="acard-${a.id}">
-      <div class="hcard-icon" style="font-size:14px">📊</div>
-      <div class="hcard-body">
-        <div class="hcard-name">${esc(a.name)}</div>
-        <div class="hcard-meta">by ${esc(a.saved_by||'Anonymous')} · ${fmtDateShort(a.created_at)}</div>
-        ${s.deactivate!=null?`<div class="hcard-counts">${countBadges(s)}</div>`:''}
-        ${critBlock?`<div class="hcard-criteria">${critBlock}</div>`:''}
-        <div class="hcard-actions">
-          <button class="hbtn primary" onclick="reloadAnalysis('${a.id}');showTab('analysis')">⟳ Reload</button>
-          ${hasCsv?`<button class="hbtn" onclick="triggerCsvDownload(${csvArg},${nameArg})">↓ Export CSV</button>`:''}
-          <button class="hbtn delete" onclick="deleteAnalysis('${a.id}')">🗑 Delete</button>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  const groupsHtml = imports.length ? imports.map(i => {
-    const linked = byImport[i.id] || [];
-    return `
-    <div class="import-group" id="icard-${i.id}">
-      <div class="import-group-header">
-        <div class="import-group-left">
-          <span class="import-group-icon">📥</span>
-          <div>
-            <div class="import-group-name">${esc(i.name)}</div>
-            <div class="hcard-meta">${i.row_count} rows · ${fmtDateShort(i.created_at)} · ${linked.length} ${linked.length===1?'analysis':'analyses'}</div>
-          </div>
-        </div>
-        <div class="hcard-actions">
-          <button class="hbtn primary" onclick="redownloadImport('${i.id}','${esc(i.name)}')">↓ Download CSV</button>
-          <button class="hbtn delete" onclick="deleteImport('${i.id}')">🗑 Delete</button>
-        </div>
-      </div>
-      ${linked.length ? `<div class="linked-analyses">${linked.map(analysisCard).join('')}</div>` : ''}
-    </div>`;
-  }).join('') : `<div class="history-empty">No imports yet.</div>`;
-
-  const unlinkedHtml = unlinked.length ? `
-    <div style="margin-top:24px">
-      <div class="history-section-hd" style="color:var(--muted)">📊 Analyses without a linked import <span class="count-badge">${unlinked.length}</span></div>
-      ${unlinked.map(analysisCard).join('')}
-    </div>` : '';
-
-  el.innerHTML = `<div class="history-page">
-    <div class="history-section-hd">📥 Imports &amp; Analyses <span class="count-badge">${imports.length}</span></div>
-    ${groupsHtml}
-    ${unlinkedHtml}
-  </div>`;
-}
-
-function criteriaBlock(c) {
-  if (!c) return '';
-  const d = c.deactivate||{}, r = c.review||{};
-  const fmtVal = crit => crit ? `<strong>${crit.op==='lte'?'≤':'<'} ${crit.value}</strong>` : null;
-  const conn = s => `<span style="color:var(--muted2);font-size:10px;margin:0 2px">${(s||'AND').toUpperCase()}</span>`;
-
-  function buildRow(label, val, c1, next1, c2, next2) {
-    if (!val && !next1 && !next2) return '';
-    const parts = [];
-    if (val)   parts.push(`<span>${label}: ${fmtVal(val)}</span>`);
-    if (next1) { parts.push(conn(c1)); parts.push(`<span>created ${fmtVal(next1)}</span>`); }
-    if (next2) { parts.push(conn(c2)); parts.push(`<span>updated ${fmtVal(next2)}</span>`); }
-    return parts.join(' ');
-  }
-
-  const dRow = buildRow('30d usage', d.usage, d.connector1, d.created, d.connector2, d.updated);
-  const rRow = buildRow('30d usage', r.usage, r.connector1, r.created, r.connector2, r.updated);
-  const scopeLabel = c.activeFilter==='true'?'Active macros only':c.activeFilter==='false'?'Inactive macros only':'All macros';
-
-  let html = `<table style="border-collapse:collapse;width:100%;font-size:11px;line-height:1.9">`;
-  if (dRow) html += `<tr><td style="width:80px;padding-right:8px;color:var(--deactivate);font-weight:700;white-space:nowrap;vertical-align:top">Deactivate</td><td>${dRow}</td></tr>`;
-  if (rRow) html += `<tr><td style="width:80px;padding-right:8px;color:var(--review);font-weight:700;white-space:nowrap;vertical-align:top">Review</td><td>${rRow}</td></tr>`;
-  html += `<tr><td style="color:var(--muted2);vertical-align:top">Scope</td><td><span style="color:var(--muted)">${scopeLabel}</span></td></tr>`;
-  html += `</table>`;
-  return html;
-}
-
-let _loadedAnalysisId = null;
-
-async function reloadAnalysis(id) {
-  document.querySelectorAll('.ana-item, .analysis-card').forEach(c => c.classList.remove('active-card'));
-  document.querySelectorAll(`[data-id="${id}"], #acard-${id}`).forEach(c => c.classList.add('active-card'));
-
-  // Scroll active item into view in sidebar
-  const sidebarItem = document.querySelector(`.ana-item[data-id="${id}"]`);
-  if (sidebarItem) sidebarItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-
-  toast('Loading…', 'success');
-
-  const { data: rec, error } = await sb.from('exports').select('*').eq('id', id).single();
-  if (error || !rec) { toast('Could not load analysis', 'error'); return; }
-
-  _loadedAnalysisId = id;
-
-  if (rec.criteria) restoreCriteria(rec.criteria);
-
-  if (rec.import_id) {
-    const { data: imp } = await sb.from('imports').select('id,name,csv_data,row_count').eq('id', rec.import_id).single();
-    if (imp?.csv_data) {
-      rawRows = imp.csv_data;
-      currentImportId = imp.id;
-      currentImportName = imp.name;
-      document.getElementById('file-name').textContent = imp.name;
-      document.getElementById('run-btn').disabled = false;
-      document.getElementById('run-btn').textContent = `Run Analysis (${imp.row_count} rows)`;
-    }
-  }
-
-  if (rawRows.length) {
-    runAnalysis();
-    showLoadedBar(rec);
-    toast(`Loaded: ${rec.name}`);
-  } else {
-    showLoadedBar(rec);
-    toast('No import linked — criteria restored, upload a CSV to re-run', 'error');
-  }
-}
-
-function showLoadedBar(rec) {
-  const bar = document.getElementById('loaded-bar');
-  const s = rec.summary || {};
-  document.getElementById('lb-name').textContent = rec.name;
-  document.getElementById('lb-meta').textContent =
-    `${rec.saved_by || 'Anonymous'} · ${fmtDateShort(rec.created_at)}${rec.import_name ? ' · ' + rec.import_name : ''}`;
-  document.getElementById('lb-pills').innerHTML = [
-    s.deactivate != null ? `<span class="lb-pill d">🔴 ${s.deactivate}</span>` : '',
-    s.review     != null ? `<span class="lb-pill r">🟡 ${s.review}</span>`     : '',
-    s.keep       != null ? `<span class="lb-pill k">🟢 ${s.keep}</span>`       : '',
-  ].join('');
-  bar.classList.add('visible');
-}
-
-function clearLoadedBar() {
-  document.getElementById('loaded-bar').classList.remove('visible');
-  _loadedAnalysisId = null;
-  document.querySelectorAll('.ana-item, .analysis-card').forEach(c => c.classList.remove('active-card'));
-}
-
-
-function restoreCriteria(c) {
-  const d = c.deactivate || {}, r = c.review || {};
-
-  const setNA = (naId, fieldsId, isNull) => {
-    document.getElementById(naId).checked = isNull;
-    document.getElementById(fieldsId).classList.toggle('disabled', isNull);
-  };
-
-  if (d.usage != null)   { setNA('d-usage-na','d-usage-fields',false); document.getElementById('d-usage').value = d.usage.value; }
-  else                   { setNA('d-usage-na','d-usage-fields',true); }
-  if (d.created != null) { setNA('d-created-na','d-created-fields',false); document.getElementById('d-created').value = d.created.value; }
-  else                   { setNA('d-created-na','d-created-fields',true); }
-  if (d.updated != null) { setNA('d-updated-na','d-updated-fields',false); document.getElementById('d-updated').value = d.updated.value; }
-  else                   { setNA('d-updated-na','d-updated-fields',true); }
-
-  if (r.usage != null)   { setNA('r-usage-na','r-usage-fields',false); document.getElementById('r-usage').value = r.usage.value; }
-  else                   { setNA('r-usage-na','r-usage-fields',true); }
-  if (r.created != null) { setNA('r-created-na','r-created-fields',false); document.getElementById('r-created').value = r.created.value; }
-  else                   { setNA('r-created-na','r-created-fields',true); }
-  if (r.updated != null) { setNA('r-updated-na','r-updated-fields',false); document.getElementById('r-updated').value = r.updated.value; }
-  else                   { setNA('r-updated-na','r-updated-fields',true); }
-
-  if (d.connector1) setConnector('d-c1', d.connector1);
-  if (d.connector2) setConnector('d-c2', d.connector2);
-  if (r.connector1) setConnector('r-c1', r.connector1);
-  if (r.connector2) setConnector('r-c2', r.connector2);
-
-  if (c.activeFilter) setActiveFilter(c.activeFilter);
-}
-
-async function deleteImport(id) {
-  if (!confirm('Delete this import? This cannot be undone.')) return;
-  const { error } = await sb.from('imports').delete().eq('id', id);
-  if (error) { toast('Delete failed', 'error'); return; }
-  document.getElementById(`icard-${id}`)?.remove();
-  toast('Import deleted');
-}
-
-async function deleteAnalysis(id) {
-  if (!confirm('Delete this saved analysis? This cannot be undone.')) return;
-  const { error } = await sb.from('exports').delete().eq('id', id);
-  if (error) { toast('Delete failed', 'error'); return; }
-  document.getElementById(`acard-${id}`)?.remove();
-  if (_loadedAnalysisId === id) clearLoadedBar();
-  toast('Analysis deleted');
-}
-
-async function redownloadImport(id, name) {
-  toast('Preparing download…');
-  const { data, error } = await sb.from('imports').select('csv_data,name').eq('id', id).single();
-  if (error || !data?.csv_data) { toast('Could not fetch import data', 'error'); return; }
-  const csv = Papa.unparse(data.csv_data);
-  triggerCsvDownload(csv, data.name || name);
-}
-
-// ── HELPERS ───────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtDate(d){if(!d||isNaN(d))return'—';return d.toISOString().slice(0,10);}
-function fmtDateShort(s){if(!s)return'—';return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
-function fmtDateLong(s){if(!s)return'—';return new Date(s).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}
 function pct(a,b){return b?Math.round(a/b*100):0;}
 function tierLabel(t){return t==='deactivate'?'Deactivate':t==='review'?'Review':'Keep';}
 </script>
